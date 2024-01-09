@@ -1,3 +1,4 @@
 .
 *.graphml
 *.gml
+./Scooter_Sim/cache/*
