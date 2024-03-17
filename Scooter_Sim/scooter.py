@@ -3,11 +3,13 @@ import json
 import os
 import signal
 import time
+from concurrent.futures import ThreadPoolExecutor
+
 import networkx as nx
 import osmnx as ox
 import random
 import sys
-from confluent_kafka import Producer
+from confluent_kafka import Producer, Consumer, KafkaException
 from confluent_kafka.serialization import StringSerializer
 
 
@@ -24,7 +26,7 @@ class Route:
         return f"Route from {self.start_node} to {self.end_node} with a total distance of {self.total_distance} meters."
 
     def get_remaining_distance(self):
-        return round(self.remaining_distance,0)
+        return round(self.remaining_distance, 0)
 
     def make_step(self):
         if len(self.route) > 1:
@@ -76,8 +78,43 @@ def send_coordinates(producer, topic, route: Route):
     producer.flush()
 
 
+def receive_coordinates(config, topics, stop_event):
+    # Create a Consumer instance
+    consumer = Consumer(config)
+    print('Consumer created')
+    try:
+        # Subscribe to topics
+        consumer.subscribe(topics)
+
+        # Continuously poll for messages
+        while not stop_event.is_set():
+            msg = consumer.poll(timeout=1.0)
+            if msg is None:  # No message returned within timeout
+                continue
+            if msg.error():
+                if msg.error().code() == KafkaException._PARTITION_EOF:
+                    # End of partition event
+                    print(f'End of partition reached {msg.topic()}[{msg.partition()}] @ {msg.offset()}')
+                elif msg.error():
+                    raise KafkaException(msg.error())
+            else:
+                # Successfully received a message
+                print(f'Received message: {msg.value().decode("utf-8")}')
+
+    finally:
+        print('Closing consumer')
+        # Close down consumer to commit final offsets.
+        consumer.close()
+
+
+async def run_consumer_in_thread(loop, config, topics, stop_event):
+    executor = ThreadPoolExecutor(max_workers=1)
+    await loop.run_in_executor(executor, receive_coordinates, config, topics, stop_event)
+
+
 # Asynchronous main function
 async def main(graph_file_path, stop_event):
+    print("Starting the producer.")
     graph = await load_graph(graph_file_path)
     producer = Producer({'bootstrap.servers': 'localhost:9092'
                          })
@@ -102,9 +139,18 @@ async def main(graph_file_path, stop_event):
 
 
 if __name__ == "__main__":
-    def signal_handler():
-        print("Sending termination.")
-        stop_event.set()
+
+    async def graceful_shutdown(loop, stop_event, tasks):
+        print("Graceful shutdown initiated.")
+        stop_event.set()  # Signal all tasks to terminate
+        await asyncio.gather(*tasks)  # Wait for all tasks to complete
+        loop.stop()  # Stop the event loop
+        print("All tasks completed, shutting down.")
+
+
+    def signal_handler(loop, stop_event, tasks):
+        print("Signal received, initiating graceful shutdown.")
+        asyncio.ensure_future(graceful_shutdown(loop, stop_event, tasks), loop=loop)
 
 
     if len(sys.argv) != 2:
@@ -124,13 +170,25 @@ if __name__ == "__main__":
         G = ox.add_edge_travel_times(G)
         print("Saving graph to file.")
         ox.save_graphml(G, graph_file_path)
-    # Interrupt handler
-    stop_event = asyncio.Event()
+
+    # Corrected approach:
     loop = asyncio.get_event_loop()
-    loop.add_signal_handler(signal.SIGINT, signal_handler)
+    stop_event = asyncio.Event()
+
+    # Schedule the coroutine for execution
+    send_coordinates_task = loop.create_task(main(graph_file_path, stop_event))
+    get_msg_task = loop.create_task(
+        run_consumer_in_thread(loop, {'bootstrap.servers': 'localhost:9092', 'group.id': 'test'}, ['routes'],
+                               stop_event))
+    tasks = [send_coordinates_task, get_msg_task]
+
+    # Register the signal handler
+    loop.add_signal_handler(signal.SIGINT, signal_handler, loop, stop_event, tasks)
+
     try:
-        print("Starting the producer.")
-        loop.run_until_complete(main(graph_file_path, stop_event))
-        print("Producer stopped.")
+        print("Starting the event loop.")
+        loop.run_forever()
     finally:
+        loop.run_until_complete(loop.shutdown_asyncgens())  # Close asynchronous generators
         loop.close()
+        print("Event loop closed.")
