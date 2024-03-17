@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import signal
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
@@ -9,6 +10,8 @@ import networkx as nx
 import osmnx as ox
 import random
 import sys
+
+from asyncio import Queue
 from confluent_kafka import Producer, Consumer, KafkaException
 from confluent_kafka.serialization import StringSerializer
 
@@ -36,6 +39,129 @@ class Route:
             return self.route[0]
         else:
             return None
+
+def run_consumer(scooter, loop):
+    kafka_config = {'bootstrap.servers': 'localhost:9092', 'group.id': 'scooter_group'}
+    consumer = Consumer(kafka_config)
+    consumer.subscribe(['scooter_commands'])
+    print("Consumer started.")
+    try:
+        while True:
+            msg = consumer.poll(1.0)
+            if msg is None:
+                continue
+            if msg.error():
+                print(f"Consumer error: {msg.error()}")
+                if msg.error().code() == KafkaException._PARTITION_EOF:
+                    # End of partition event
+                    continue
+                else:
+                    raise KafkaException(msg.error())
+            else:
+                # Successfully received a message, add it to the command queue
+                message = msg.value().decode('utf-8')
+                message = json.loads(message)
+                #print(f"Received message: {message}")
+                if message["status"] is not None:
+                    print(f"Received status: {message['status']}")
+                    asyncio.run_coroutine_threadsafe(scooter.command_queue.put(message['status']), loop)
+                #print(f"Added command to queue: {msg.value().decode('utf-8')}")
+    finally:
+        consumer.close()
+class Scooter:
+    def __init__(self, id, producer, topic, graph, command_queue, loop):
+        self.id = id
+        self.producer = producer
+        self.topic = topic
+        self.graph = graph
+        self.route = None
+        self.status = 'idle'  # Possible states: idle, navigating, stopped
+        self.remaining_distance = 0
+        self.command_queue = command_queue
+        self.loop = loop
+
+
+
+    def run_consumer_in_thread(self,loop):
+        print("Starting consumer thread.")
+        #executor = ThreadPoolExecutor(max_workers=1)
+        #await self.loop.run_in_executor(executor, run_consumer(self))
+        thread = threading.Thread(target=run_consumer, args=(self,loop))
+        thread.start()
+        print("Consumer thread started.")
+    async def process_commands(self):
+        while True:
+            command = await self.command_queue.get()
+            # Process command here...
+            print(f"Scooter {self.id} received command: {command}")
+            # Example command processing logic
+            if command == 'start' and self.status == 'idle':
+                # For simplicity, hardcoded start and end nodes. In practice, these would be dynamic.
+                asyncio.create_task(self.start_navigation(choose_random_node(self.graph), choose_random_node(self.graph)))
+                #self.start_navigation(choose_random_node(self.graph), choose_random_node(self.graph))
+                print(f"Scooter {self.id} started navigation.")
+            elif command == 'stop':
+                self.stop_navigation()
+                print(f"Scooter {self.id} stopped navigation.")
+
+    def json_serializer(self, data):
+        """Converts data to a JSON string and encodes it to bytes."""
+        return json.dumps(data).encode('utf-8')
+
+    def send_coordinates(self):
+        if self.current_node is not None:
+            x, y = self.graph.nodes[self.current_node]['x'], self.graph.nodes[self.current_node]['y']
+            data = {
+                "status": self.status,
+                "node_id": self.current_node,
+                "x": x,
+                "y": y,
+                "remaining_distance": self.remaining_distance
+            }
+            serialized_data = self.json_serializer(data)
+            self.producer.produce(self.topic, value=serialized_data)
+            #self.producer.flush()
+
+    async def start_navigation(self, start_node, end_node):
+        self.status = 'navigating'
+        self.current_node = start_node
+        self.end_node = end_node
+        self.route = nx.shortest_path(self.graph, start_node, end_node, weight='length')
+        self.remaining_distance = nx.shortest_path_length(self.graph, start_node, end_node, weight='length')
+        self.send_coordinates()  # Send initial coordinates
+
+        while self.status == 'navigating':
+            await asyncio.sleep(1)
+            print("-> Making move")
+            self.make_step()
+
+
+    def stop_navigation(self):
+        self.status = 'stopped'
+        self.send_coordinates()  # Send final coordinates
+
+    def make_step(self):
+        if self.status == 'navigating' and self.route:
+            # Assume the first node in the route is the current location, so pop it
+            self.route.pop(0)
+            if len(self.route) > 0:
+                self.current_node = self.route[0]
+                self.remaining_distance = nx.shortest_path_length(self.graph, self.current_node, self.end_node,
+                                                                  weight='length')
+                self.send_coordinates()
+            else:
+                self.stop_navigation()
+
+    async def process_commandFFs(self, command_queue):
+        while self.status != 'stopped':
+            if not command_queue.empty():
+                command = await command_queue.get()
+                if command == 'start' and self.status == 'idle':
+                    # For simplicity, hardcoded start and end nodes. In practice, these would be dynamic.
+                    self.start_navigation(choose_random_node(self.graph), choose_random_node(self.graph))
+                elif command == 'stop':
+                    self.stop_navigation()
+            await asyncio.sleep(1)  # Prevent this loop from hogging the CPU
 
 
 async def load_graph(file_path):
@@ -107,39 +233,47 @@ def receive_coordinates(config, topics, stop_event):
         consumer.close()
 
 
-async def run_consumer_in_thread(loop, config, topics, stop_event):
-    executor = ThreadPoolExecutor(max_workers=1)
-    await loop.run_in_executor(executor, receive_coordinates, config, topics, stop_event)
+
+async def main(stop_event, graph_file_path="cesena.graphml"):
+    # Load the graph (this could be a simplified example; adjust as necessary for your use case)
+    #graph = ox.graph_from_place('Piedmont, California, USA', network_type='drive')
 
 
-# Asynchronous main function
-async def main(graph_file_path, stop_event):
-    print("Starting the producer.")
+    print("Enter Main.")
+    loop = asyncio.get_event_loop()
+    producer = Producer({'bootstrap.servers': 'localhost:9092'})
+    # Command queue for communicating with scooter instances
+    command_queue = Queue()
     graph = await load_graph(graph_file_path)
-    producer = Producer({'bootstrap.servers': 'localhost:9092'
-                         })
-    try:
-        while not stop_event.is_set():
-            route = Route(choose_random_node(graph), choose_random_node(graph), graph)
-            send_coordinates(producer, 'routes', route)
-            while route.make_step() is not None:
-                if stop_event.is_set():
-                    return  # Exit the function
-                await asyncio.sleep(3)
-                print("-> Sending coordinates.")
-                send_coordinates(producer, 'routes', route)
+    print("Scooter start init.")
+    # Initialize scooters (for simplicity, starting and ending nodes are not dynamically chosen here)
+    scooters = [
+        Scooter(id='Scooter1', producer=producer, topic='scooter_commands', graph=graph, command_queue=command_queue, loop=asyncio.get_running_loop()),]
+    print("Scooter init done.")
+    # Start listening for commands in each scooter
+    for scooter in scooters:
+        scooter.run_consumer_in_thread(loop = asyncio.get_running_loop())
+    print("Scooter started listening.")
+    # Process commands in each scooter
+    tasks = [asyncio.create_task(scooter.process_commands()) for scooter in scooters]
+    loop.add_signal_handler(signal.SIGINT, signal_handler, loop, stop_event, tasks)
 
-    finally:
-        print("Stopping the producer loop.")
-        producer.flush()
-
-    def deserializer(data):
-        """Deserializes data from bytes to a JSON string."""
-        return json.loads(data.decode('utf-8'))
+    # Set up Kafka producer (ensure to configure as per your Kafka setup)
+    #producer = Producer({'bootstrap.servers': 'localhost:9092'})
 
 
-if __name__ == "__main__":
 
+    # Example commands (in a real scenario, these would come from user input or another part of the application)
+    await asyncio.sleep(1)  # Simulate some delay
+    await command_queue.put('start')  # Command to start navigating
+
+    # Wait for all tasks to complete (in this case, they should complete after receiving the 'stop' command)
+    await asyncio.gather(*tasks)
+
+
+if __name__ == '__main__':
+
+    #asyncio.run(main())
     async def graceful_shutdown(loop, stop_event, tasks):
         print("Graceful shutdown initiated.")
         stop_event.set()  # Signal all tasks to terminate
@@ -151,39 +285,12 @@ if __name__ == "__main__":
     def signal_handler(loop, stop_event, tasks):
         print("Signal received, initiating graceful shutdown.")
         asyncio.ensure_future(graceful_shutdown(loop, stop_event, tasks), loop=loop)
-
-
-    if len(sys.argv) != 2:
-        print("Usage: python scooter.py <path/to/graph/file.graphml>")
-        print("If no path is specified, the default graph will be used.")
-        graph_file_path = "graph.graphml"
-    else:
-        graph_file_path = sys.argv[1]
-
-    if not os.path.exists(graph_file_path):
-        print("Graph file not found, downloading from source.")
-        # Load and save the graph from the source
-        G = ox.graph_from_address("Corso Giuseppe Mazzini, 5, 47521 Cesena FC, Italy",
-                                  dist=2000, network_type='drive')
-        # OSM data are sometime incomplete so we use the speed module of osmnx to add missing edge speeds and travel times
-        G = ox.add_edge_speeds(G)
-        G = ox.add_edge_travel_times(G)
-        print("Saving graph to file.")
-        ox.save_graphml(G, graph_file_path)
-
     # Corrected approach:
     loop = asyncio.get_event_loop()
     stop_event = asyncio.Event()
 
-    # Schedule the coroutine for execution
-    send_coordinates_task = loop.create_task(main(graph_file_path, stop_event))
-    get_msg_task = loop.create_task(
-        run_consumer_in_thread(loop, {'bootstrap.servers': 'localhost:9092', 'group.id': 'test'}, ['routes'],
-                               stop_event))
-    tasks = [send_coordinates_task, get_msg_task]
-
     # Register the signal handler
-    loop.add_signal_handler(signal.SIGINT, signal_handler, loop, stop_event, tasks)
+    loop.create_task(main(stop_event))
 
     try:
         print("Starting the event loop.")
