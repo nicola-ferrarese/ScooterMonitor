@@ -3,3 +3,4 @@
 *.gml
 ./Scooter_Sim/cache/*
 .idea/*
+/node/node_modules/

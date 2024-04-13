@@ -174,6 +174,7 @@ class Scooter:
         if self.current_node is not None:
             x, y = self.graph.nodes[self.current_node]['x'], self.graph.nodes[self.current_node]['y']
             data = {
+                "id": self.id,
                 "status": self.status,
                 "node_id": self.current_node,
                 "x": x,
@@ -201,7 +202,7 @@ class Scooter:
             print(f"[{self.id}] -> navigating.")
             await asyncio.sleep(1)
             if stop_event.is_set() is False:
-                self.make_step()
+                await self.make_step()
             else:
                 await self.command_queue.put('stop')
                 break
@@ -211,7 +212,7 @@ class Scooter:
         self.status = 'idle'
         self.send_coordinates()  # Send final coordinates
 
-    def make_step(self):
+    async def make_step(self):
         if self.status == 'navigating' and self.route:
             # Assume the first node in the route is the current location, so pop it
             self.route.pop(0)
@@ -221,7 +222,9 @@ class Scooter:
                                                                   weight='length')
                 self.send_coordinates()
             else:
-                self.stop_navigation()
+                await  self.stop_navigation()
+        else:
+            print(f"[{self.id}] -> make_step called while not navigating.")
 
 async def load_graph(file_path):
     return ox.load_graphml(file_path)
@@ -243,24 +246,7 @@ def json_serializer(data):
     return json.dumps(data).encode('utf-8')
 
 
-# Function to send coordinates to Kafka
-def send_coordinates(producer, topic, route: Route):
-    node_id = route.route[0]
-    x, y = route.env_map.nodes[node_id]['x'], route.env_map.nodes[node_id]['y']
-    message = f"Remaining distance: {route.get_remaining_distance()} meters, Node {node_id}, x: {x}, y: {y}"
-    data = {
-        "distance": route.get_remaining_distance(),
-        "node_id": node_id,
-        "x": x,
-        "y": y
-    }
-    # Serialize data
-    serialized_data = json_serializer(data)
 
-    # print(message)
-    keyEn = json.dumps(node_id).encode('utf-8')
-    producer.produce(topic, key=keyEn, value=serialized_data)
-    producer.flush()
 
 
 async def main(stop_event, graph_file_path="cesena.graphml"):
