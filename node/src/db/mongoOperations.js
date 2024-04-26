@@ -1,10 +1,29 @@
 const { getDb } = require('./mongoConnection');
 
-const updateScooter = async (id, status, node_id) => {
-    const db = getDb();
-    const collection = db.collection('scooters');
-    console.log(`Updating scooter ${id} with status ${status} and node_id ${node_id}`);
-    return collection.updateOne({ id }, { $set: { status, node_id } }, { upsert: true });
-};
+const Scooter = require('../models/scooterModel');
+const {sendKafkaMessage} = require("../kafka/producer");
 
-module.exports = { updateScooter };
+
+async function createScooter(data) {
+    const scooter = new Scooter(data);
+    return await scooter.save();
+}
+
+async function readScooter(id) {
+    return Scooter.findOne({"id":id});
+}
+
+async function updateScooter(id, updateData) {
+    return Scooter.findOneAndUpdate({"id": id}, updateData, {new: true});
+}
+
+async function sendDestination(id, destination) {
+    console.log(`Sending destination to scooter ${id}: ${destination}`);
+    return sendKafkaMessage({id, destination});
+}
+
+async function deleteScooter(id) {
+    return await Scooter.findByIdAndDelete(id);
+}
+
+module.exports = { createScooter, readScooter, deleteScooter, updateScooter, sendDestination };

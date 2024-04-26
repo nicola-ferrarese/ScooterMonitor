@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 // app.use('/users', userRoutes);
-// app.use('/scooters', scooterRoutes);
+app.use('/api/scooter', scooterRoutes);
 
 (async () => {
     await connectMongo();
