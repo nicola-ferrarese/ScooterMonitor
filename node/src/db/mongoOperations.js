@@ -1,5 +1,4 @@
 const { getDb } = require('./mongoConnection');
-
 const Scooter = require('../models/scooterModel');
 const {sendKafkaMessage} = require("../kafka/producer");
 
@@ -14,6 +13,9 @@ async function readScooter(id) {
 }
 
 async function updateScooter(id, updateData) {
+    const io = require('../middleware/socket').getIO();
+    console.log(`Sending update to scooter ${id}: ${JSON.stringify(updateData)}`);
+    io.emit('scooterUpdate', updateData);
     return Scooter.findOneAndUpdate({"id": id}, updateData, {new: true});
 }
 

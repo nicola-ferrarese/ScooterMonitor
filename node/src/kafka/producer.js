@@ -1,6 +1,6 @@
 const { Kafka } = require('kafkajs');
 const { kafkaBrokers, kafkaClientId, kafkaGroupId, kafkaTopic } = require('../config');
-const { updateScooter } = require('../db/mongoOperations');
+
 
 const kafka = new Kafka({
     clientId: kafkaClientId,

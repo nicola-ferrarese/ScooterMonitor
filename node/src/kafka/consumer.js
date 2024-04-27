@@ -19,8 +19,8 @@ const consumeKafkaMessage = async () => {
             if (msg.status !== undefined) {
                 console.log(`Received message: %o`, msg);
             }
-            //await updateScooter(msg.id, {});
-            let x = updateScooter(msg.id, {status: msg.status});
+
+            let x = updateScooter(msg.id, msg);
         },
     });
 }
