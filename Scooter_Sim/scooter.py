@@ -1,5 +1,6 @@
 import asyncio
 import json
+import math
 import os
 import signal
 import threading
@@ -39,6 +40,7 @@ class Route:
             return self.route[0]
         else:
             return None
+
 
 def run_consumer(scooter, loop):
     kafka_config = {'bootstrap.servers': 'localhost:9092', 'group.id': f"scooters_consumers{random.randint(1, 1000)}", }
@@ -82,7 +84,7 @@ class Scooter:
         self.topic = topic
         self.graph = graph
         self.route = None
-        self.status = 'idle'  # Possible states: idle, navigating, stopped
+        self.status = 'available'  # Possible states: idle, navigating, stopped
         self.remaining_distance = 0
         self.command_queue: Queue = command_queue
         self.loop = loop
@@ -106,7 +108,7 @@ class Scooter:
             # Process command here...
             print(f"Scooter {self.id} received command: {command}")
             # Example command processing logic
-            if command == 'start' and self.status == 'idle' and stop_event.is_set() is False:
+            if command == 'start' and self.status == 'available' and stop_event.is_set() is False:
                 print(f"[{self.id}] -> start command in queue. Starting navigation.")
                 # For simplicity, hardcoded start and end nodes. In practice, these would be dynamic.
                 asyncio.run_coroutine_threadsafe(self.start_navigation(choose_random_node(self.graph),
@@ -141,7 +143,7 @@ class Scooter:
                 command = command_task.result()  # Get the result of the command task
                 print(f"Scooter {self.id} received command: {command}")
                 # Example command processing logic
-                if command == 'start' and self.status == 'idle' and stop_event.is_set() is False:
+                if command == 'start' and self.status == 'available' and stop_event.is_set() is False:
                     print(f"[{self.id}] -> start command in queue. Starting navigation.")
                     # For simplicity, hardcoded start and end nodes. In practice, these would be dynamic.
                     asyncio.run_coroutine_threadsafe(self.start_navigation(choose_random_node(self.graph),
@@ -170,20 +172,46 @@ class Scooter:
         """Converts data to a JSON string and encodes it to bytes."""
         return json.dumps(data).encode('utf-8')
 
-    def send_coordinates(self):
+    def send_coordinates(self, x=None, y=None, start: bool = False, end: bool = False):
         if self.current_node is not None:
-            x, y = self.graph.nodes[self.current_node]['x'], self.graph.nodes[self.current_node]['y']
+            if x is None and y is None:
+                x, y = self.graph.nodes[self.current_node]['x'], self.graph.nodes[self.current_node]['y']
             data = {
                 "id": self.id,
-                "status": self.status,
-                "node_id": self.current_node,
-                "x": x,
-                "y": y,
-                "remaining_distance": self.remaining_distance
+                #"status": self.status,
+                #"node_id": self.current_node,
+                "lon": x, # l
+                "lat": y, #
+                #"remaining_distance": self.remaining_distance
             }
+            if start:
+                self.send_update(event='start')
+            if end:
+                self.send_update(event='end')
             serialized_data = self.json_serializer(data)
+            print(f"[{self.id}] -> Sending coordinates: {data}")
             self.producer.produce(self.topic, value=serialized_data)
             # self.producer.flush()
+
+    def send_update(self, distance: float = None, event: str = None):
+        data = {
+            "id": self.id,
+            "event": event if event is not None else "update",
+            "distance": distance if distance is not None else 0,
+            "timestamp": int(time.time() * 1000),  # Convert to milliseconds
+            'start': {
+                "lon": self.graph.nodes[self.route[0]]['x'],
+                "lat": self.graph.nodes[self.route[0]]['y']
+            },
+            'end': {
+                "lon": self.graph.nodes[self.route[1]]['x'] if len(self.route) > 1 else self.graph.nodes[self.end_node]['x'],
+                "lat": self.graph.nodes[self.route[1]]['y'] if len(self.route) > 1 else self.graph.nodes[self.end_node]['y']
+            }
+        }
+        serialized_data = self.json_serializer(data)
+        print(f"[{self.id}] -> Sending update: {data}")
+        self.producer.produce(self.topic, value=serialized_data)
+        # self.producer.flush()
 
     async def start_navigation(self, start_node, end_node):
         self.status = 'navigating'
@@ -191,7 +219,7 @@ class Scooter:
         self.end_node = end_node
         self.route = nx.shortest_path(self.graph, start_node, end_node, weight='length')
         self.remaining_distance = nx.shortest_path_length(self.graph, start_node, end_node, weight='length')
-        self.send_coordinates()  # Send initial coordinates
+        self.send_coordinates(start=True)  # Send initial coordinates
 
         print(f"[{self.id}] -> navigate start navigation.")
         await asyncio.create_task(self.navigate())
@@ -200,7 +228,6 @@ class Scooter:
     async def navigate(self):
         while self.status == 'navigating':
             print(f"[{self.id}] -> navigating.")
-            await asyncio.sleep(1)
             if stop_event.is_set() is False:
                 await self.make_step()
             else:
@@ -209,22 +236,116 @@ class Scooter:
 
     async def stop_navigation(self):
         print(f"[{self.id}] -> stop navigation.")
-        self.status = 'idle'
-        self.send_coordinates()  # Send final coordinates
+        self.send_update(event='end')
+        self.status = 'available'
+        #self.send_coordinates(end=True)  # Send final coordinates
 
     async def make_step(self):
+        SPEED = 25  # Speed in km/h
+        S = 3 # Time interval in seconds
         if self.status == 'navigating' and self.route:
-            # Assume the first node in the route is the current location, so pop it
-            self.route.pop(0)
-            if len(self.route) > 0:
-                self.current_node = self.route[0]
+            self.current_node = self.route.pop(0)
+            positions, distance = self.get_positions(self.graph.nodes[self.current_node]['x'],
+                                           self.graph.nodes[self.current_node]['y'],
+                                           self.graph.nodes[self.route[0]]['x'],
+                                           self.graph.nodes[self.route[0]]['y'],
+                                           SPEED, S)
+
+            print(f"[{self.id}] -> make_step: {positions}")
+
+            for position in positions:
+                print(f"[{self.id}] -> make_step: {position}")
+                #if len(positions) > 3:
                 self.remaining_distance = nx.shortest_path_length(self.graph, self.current_node, self.end_node,
                                                                   weight='length')
-                self.send_coordinates()
-            else:
-                await  self.stop_navigation()
+
+                if stop_event.is_set() is False:
+                    self.send_coordinates(x=position[0], y=position[1])
+                    await asyncio.sleep(S)
+                else:
+                    await self.stop_navigation()
+                    break
+
+                if position == positions[-1]:
+                    self.send_update(distance=distance)
+
+                #else:
+                #    self.remaining_distance = nx.shortest_path_length(self.graph, self.current_node, self.end_node,
+                #                                                      weight='length')
+                 #   position = positions[-1]
+                 #   self.send_coordinates(x=position[0], y=position[1])
+
+            #await self.stop_navigation()
+            print(len(self.route))
+            if len(self.route) == 1:
+                await self.stop_navigation()
+            #if len(self.route) > 0:
+            #   self.current_node = self.route[0]
+            #   self.remaining_distance = nx.shortest_path_length(self.graph, self.current_node, self.end_node,
+            #                                                    weight='length')
+            #  self.send_coordinates()
+            #else:
+            #   await  self.stop_navigation()
         else:
             print(f"[{self.id}] -> make_step called while not navigating.")
+
+    def calculate_distance(self, x1, y1, x2, y2):
+        return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+
+    def haversine(self, lat1, lon1, lat2, lon2):
+        R = 6371000  # Earth's radius in meters
+        phi1, phi2 = math.radians(lat1), math.radians(lat2)
+        delta_phi = math.radians(lat2 - lat1)
+        delta_lambda = math.radians(lon2 - lon1)
+
+        a = math.sin(delta_phi / 2.0) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2.0) ** 2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+        return R * c
+
+    def get_positions(self, x1, y1, x2, y2, set_speed, S):
+        '''
+        :param x1:
+        :param y1:
+        :param x2:
+        :param y2:
+        :param set_speed: in km/h
+        :param S: delay between points in seconds
+        :return: positions, distance
+        '''
+        set_speed = set_speed / 3.6  # Convert speed from km/h to m/s
+        # Calculate total distance
+        distance = self.haversine(x1, y1, x2, y2)
+        print(f"Distance: {distance}")
+
+        # Calculate total travel time in seconds at the given speed
+
+        total_time = distance / set_speed
+
+        # Calculate the number of points (one point every S seconds)
+        num_points = int(math.ceil(total_time / S))
+
+        # List to store points
+        points = [(x1, y1)]
+
+        # Calculate each point's coordinates based on time increments
+        for i in range(1, num_points):
+            t = i * S  # time elapsed until this point
+            # Calculate the proportion of the total distance covered by time t
+            if t < total_time:
+                proportion = (set_speed * t) / distance
+            else:
+                proportion = 1  # At or beyond the total travel time, the car is at the end point
+            xi = x1 + proportion * (x2 - x1)
+            yi = y1 + proportion * (y2 - y1)
+            points.append((xi, yi))
+
+        if points[-1] != (x2, y2):  # Ensure the final point is exactly the endpoint if not already added
+            points.append((x2, y2))
+        for i in range(len(points)):
+            points[i] = (round(points[i][0], 7), round(points[i][1], 7))
+        return points, distance
+
 
 async def load_graph(file_path):
     return ox.load_graphml(file_path)
@@ -246,9 +367,6 @@ def json_serializer(data):
     return json.dumps(data).encode('utf-8')
 
 
-
-
-
 async def main(stop_event, graph_file_path="cesena.graphml"):
     print("Enter Main.")
     loop = asyncio.get_event_loop()
@@ -257,12 +375,11 @@ async def main(stop_event, graph_file_path="cesena.graphml"):
     command_queue = Queue()
     graph = await load_graph(graph_file_path)
     print("Scooter start init.")
-    # Initialize scooters (for simplicity, starting and ending nodes are not dynamically chosen here)
-    scooters = [
-        Scooter(id='1_1', producer=producer, topic='scooter_commands', graph=graph, command_queue=Queue(),
-                loop=asyncio.get_running_loop()),
-        Scooter(id='1_2', producer=producer, topic='scooter_commands', graph=graph, command_queue=Queue(),
-                loop=asyncio.get_running_loop())]
+    ids = ['1_1', '1_2', '1_3', '1_4', '1_5', '1_6', '1_7', '1_8', '1_9', '1_10']
+    scooters = []
+    for id in ids:
+        scooters.append(Scooter(id=id, producer=producer, topic='scooter_commands', graph=graph, command_queue=Queue(),
+                                loop=asyncio.get_running_loop()))
 
     print("Scooter init done.")
     # Start listening for commands in each scooter
