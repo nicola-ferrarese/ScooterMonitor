@@ -1,16 +1,19 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <MapComponent/>
+  <div id="app">
+    <search-bar></search-bar>
+    <map-component class="flex-grow"></map-component>
+  </div>
 </template>
 
 <script>
 // import HelloWorld from './components/HelloWorld.vue'
 import MapComponent from "@/components/MapComponent.vue";
+import SearchBar from "@/components/SearchBar.vue";
 
 export default {
   name: 'App',
   components: {
-    //HelloWorld,
+    SearchBar,
     MapComponent
   }
 }
@@ -18,11 +21,11 @@ export default {
 
 <style>
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+.flex-grow {
+  flex: 1;
 }
 </style>
