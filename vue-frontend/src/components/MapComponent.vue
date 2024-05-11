@@ -19,6 +19,16 @@ var greenIcon = new L.Icon({
   popupAnchor: [1, -34],
   shadowSize: [41, 41]
 });
+
+var redIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
 var violetIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-violet.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -35,12 +45,36 @@ L.Icon.Default.mergeOptions({
   shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
 });
 
+const setProperIcons = (markers) => {
+  Object.entries(markers).forEach( item => {
+    let marker = item[1]
+    const id = item[0]
+    if(marker.getMarker()) {
+      if(!scooterMap.get(id)) {
+        scooterMap.set(id, ['available', false])
+      }
+      if(scooterMap.get(id).includes('available')) {
+        marker.getMarker().setIcon(greenIcon);
+      } else {
+        marker.getMarker().setIcon(redIcon);
+      }
+      if(scooterMap.get(id).includes('-clicked')) {
+        marker.getMarker().setIcon(violetIcon);
+      }
+
+    }
+  });
+}
+
 const actionAnimation = (markers, type) => {
   if(!markers || Object.values(markers).length === 0) {
     console.log('No markers found')
     return
   }
-  Object.values(markers).forEach(marker => {
+  // iterate over markers, extracting id and instance
+
+
+  Object.values(markers).forEach( marker => {
     if(marker.getMarker()) {
       marker.getMarker().setIcon(greenIcon);
       marker = marker.getMarker()
@@ -48,17 +82,30 @@ const actionAnimation = (markers, type) => {
       //type === 'hideMarkers' && item.instance.getMarker().hideMarker(hideMarker)
       type === 'stopAll' && marker.stop()
       type === 'disableAllFollowMarker' && marker.activeFollowMarker(false)
+
       //type === 'activeAnimMarker' && item.instance?.getMarker()?.activeAnimate(animateMarker)
       //type === 'activeAnimPolyline' && item.instance?.getCurrentPolyline()?.activeAnimate(animatePolyline)
     }
   });
+  setProperIcons(markers)
 }
 // disable all follow marker when zoom and drag on map
 
+const scooterMap = new Map();
+
+const resetClickMarker = (scooterMap) => {
+  scooterMap.forEach((value, key) => {
+    if(value){
+      if(value.includes('-clicked')) {
+        scooterMap.set(key, value.replace('-clicked', ''))
+    }}
+  })
+}
 
 export default {
   name: 'MapComponent',
   data() {
+
     return {
       map: null,
       markers: {} // Array to keep track of markers
@@ -96,16 +143,28 @@ export default {
     addListerners() {
       this.map.on('click', () => {
         console.log('click');
+
+        resetClickMarker(scooterMap)
         actionAnimation(this.markers, 'disableAllFollowMarker')
+
       });
       this.map.on('dragstart', () => {
         console.log('Drag start');
+        resetClickMarker(scooterMap)
         actionAnimation(this.markers, 'disableAllFollowMarker')
       });
     },
     updateScooterMarker(data) {
       console.log('Updating scooter marker');
       console.log(data);
+      if (data.event === 'start' || data.event === 'update'){
+        scooterMap.set(data.id, 'in-use')
+      }
+      if (data.event === 'end') {
+        scooterMap.set(data.id, 'available')
+      }
+      setProperIcons(this.markers)
+
       if (!data.id || !data.lat || !data.lon) {
         console.error('Invalid data received:', data);
         return;
@@ -114,17 +173,17 @@ export default {
       const id = data.id;
       const lat = data.lat;
       const lon = data.lon;
-      if (this.markers[id]) {
+      if (this.markers[id] && data.lon !== 'undefined' ) {
         //this.markers[id].setLatLng([lat, lon]);
         console.log('Moving marker to ' + lon + ', ' + lat);
         this.markers[id].addMoreLine([lat, lon], {
           animatePolyline: true,
-          hidePolylines: true,
           duration: 3000,
-          maxLengthLines: 6,
         });
+        this.markers[id].hidePolylines(false)
 
-        //this.markers[id].getCurrentPolyline()
+
+
 
       } else {
         // If the marker doesn't exist, create it and add it to the map
@@ -133,26 +192,33 @@ export default {
           animate: true,
           color: 'red',
           weight: 5,
-          hidePolylines: false,
+          hidePolylines: true,
           duration: 3000,
           removeFirstLines: false,
-          maxLengthLines: 6,
+          maxLengthLines: 2,
         },).addTo(this.map);
         marker.getMarker().setIcon(greenIcon);
 
         this.markers[id] = marker;
-        Object.values(this.markers).forEach((marker) => {
+        Object.entries(this.markers).forEach(item=> {
+          let marker = item[1]
+          let id = item[0]
           console.log('Marker:', marker);
+          console.log('ID:', id);
           if(marker) {
             marker.getMarker().on('click', () => {
               console.log('Marker clicked');
               actionAnimation(this.markers, 'disableAllFollowMarker')
-              marker.getMarker().setIcon(violetIcon);
+              let x = scooterMap.get(id)
+              scooterMap.set(id, x+"-clicked")
               marker.getMarker().activeFollowMarker(true)
             });
           }
         });
       }
+
+
+
     }
 
 
