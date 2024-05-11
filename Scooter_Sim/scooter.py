@@ -44,6 +44,9 @@ class Route:
 
 def run_consumer(scooter, loop):
     kafka_config = {'bootstrap.servers': 'localhost:9092', 'group.id': f"scooters_consumers{random.randint(1, 1000)}", }
+
+
+
     consumer = Consumer(kafka_config)
     consumer.subscribe(['scooter_commands'])
     print("->Consumer started.")
@@ -88,6 +91,7 @@ class Scooter:
         self.remaining_distance = 0
         self.command_queue: Queue = command_queue
         self.loop = loop
+        self.current_node = choose_random_node(graph)
 
     def get_command_queue(self):
         return self.command_queue
@@ -100,23 +104,6 @@ class Scooter:
         thread = threading.Thread(target=run_consumer, args=(self, loop))
         thread.start()
         print("Consumer thread started.")
-
-    async def process_commands___q(self):
-        while True:
-            print("-> Scooter process commands.")
-            command = await self.command_queue.get()
-            # Process command here...
-            print(f"Scooter {self.id} received command: {command}")
-            # Example command processing logic
-            if command == 'start' and self.status == 'available' and stop_event.is_set() is False:
-                print(f"[{self.id}] -> start command in queue. Starting navigation.")
-                # For simplicity, hardcoded start and end nodes. In practice, these would be dynamic.
-                asyncio.run_coroutine_threadsafe(self.start_navigation(choose_random_node(self.graph),
-                                                                       choose_random_node(self.graph)), self.loop)
-                print(f"[{self.id}] -> start navigation started.")
-            elif command == 'stop' or stop_event.is_set() is True:
-                print(f"[{self.id}] -> stop command in queue. Stopping navigation.")
-                asyncio.run_coroutine_threadsafe(self.stop_navigation(), self.loop)
 
     import asyncio
 
@@ -136,6 +123,7 @@ class Scooter:
             # If the stop task is done, break the loop and terminate
             if stop_task in done:
                 print("Stop event set. Terminating process_commands loop.")
+                self.producer.flush()
                 break
 
             # Otherwise, process the command
@@ -145,8 +133,8 @@ class Scooter:
                 # Example command processing logic
                 if command == 'start' and self.status == 'available' and stop_event.is_set() is False:
                     print(f"[{self.id}] -> start command in queue. Starting navigation.")
-                    # For simplicity, hardcoded start and end nodes. In practice, these would be dynamic.
-                    asyncio.run_coroutine_threadsafe(self.start_navigation(choose_random_node(self.graph),
+                    start_node = choose_random_node(self.graph) if self.current_node is None else self.current_node
+                    asyncio.run_coroutine_threadsafe(self.start_navigation(start_node,
                                                                            choose_random_node(self.graph)), self.loop)
                     print(f"[{self.id}] -> start navigation started.")
                 elif command == 'stop' or stop_event.is_set() is True:
@@ -191,7 +179,7 @@ class Scooter:
             serialized_data = self.json_serializer(data)
             print(f"[{self.id}] -> Sending coordinates: {data}")
             self.producer.produce(self.topic, value=serialized_data)
-            # self.producer.flush()
+
 
     def send_update(self, distance: float = None, event: str = None):
         data = {
