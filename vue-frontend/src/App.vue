@@ -1,19 +1,22 @@
 <template>
   <div id="app">
-    <search-bar></search-bar>
-    <map-component class="flex-grow"></map-component>
+    <HeaderCmp />
+    <div class="main-content">
+      <router-view />
+      <MapComponent />
+    </div>
   </div>
 </template>
 
 <script>
-// import HelloWorld from './components/HelloWorld.vue'
+
 import MapComponent from "@/components/MapComponent.vue";
-import SearchBar from "@/components/SearchBar.vue";
+import HeaderCmp from "@/components/HeaderCmp.vue";
 
 export default {
   name: 'App',
   components: {
-    SearchBar,
+    HeaderCmp,
     MapComponent
   }
 }
@@ -25,7 +28,9 @@ export default {
   flex-direction: column;
   height: 100vh;
 }
-.flex-grow {
+.main-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 </style>

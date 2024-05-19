@@ -42,13 +42,11 @@ class Route:
             return None
 
 
-def run_consumer(scooter, loop):
+def run_consumer(scooter, loop, topic_commands):
     kafka_config = {'bootstrap.servers': 'localhost:9092', 'group.id': f"scooters_consumers{random.randint(1, 1000)}", }
 
-
-
     consumer = Consumer(kafka_config)
-    consumer.subscribe(['scooter_commands'])
+    consumer.subscribe([topic_commands])
     print("->Consumer started.")
     try:
         while True:
@@ -81,10 +79,12 @@ def run_consumer(scooter, loop):
 
 
 class Scooter:
-    def __init__(self, id, producer, topic, graph, command_queue, loop):
+    def __init__(self, id, producer, topics, graph, command_queue, loop):
         self.id = id
         self.producer = producer
-        self.topic = topic
+        self.topic_commands = topics['commands']
+        self.topic_position = topics['positions']
+        self.topic_updates = topics['updates']
         self.graph = graph
         self.route = None
         self.status = 'available'  # Possible states: idle, navigating, stopped
@@ -101,7 +101,7 @@ class Scooter:
 
     def run_consumer_in_thread(self, loop):
         print("Starting consumer thread.")
-        thread = threading.Thread(target=run_consumer, args=(self, loop))
+        thread = threading.Thread(target=run_consumer, args=(self, loop, self.topic_commands))
         thread.start()
         print("Consumer thread started.")
 
@@ -178,7 +178,7 @@ class Scooter:
                 self.send_update(event='end')
             serialized_data = self.json_serializer(data)
             print(f"[{self.id}] -> Sending coordinates: {data}")
-            self.producer.produce(self.topic, value=serialized_data)
+            self.producer.produce(self.topic_position, value=serialized_data)
 
 
     def send_update(self, distance: float = None, event: str = None):
@@ -198,7 +198,7 @@ class Scooter:
         }
         serialized_data = self.json_serializer(data)
         print(f"[{self.id}] -> Sending update: {data}")
-        self.producer.produce(self.topic, value=serialized_data)
+        self.producer.produce(self.topic_updates, value=serialized_data)
         # self.producer.flush()
 
     async def start_navigation(self, start_node, end_node):
@@ -358,8 +358,13 @@ async def main(stop_event, graph_file_path="cesena.graphml"):
     print("Scooter start init.")
     ids = ['1_1', '1_2', '1_3', '1_4', '1_5', '1_6', '1_7', '1_8', '1_9', '1_10']
     scooters = []
+    topics= {
+        'commands': 'scooter_commands',
+        'positions': 'scooter_positions',
+        'updates': 'scooter_updates'
+    }
     for id in ids:
-        scooters.append(Scooter(id=id, producer=producer, topic='scooter_commands', graph=graph, command_queue=Queue(),
+        scooters.append(Scooter(id=id, producer=producer, topics = topics, graph=graph, command_queue=Queue(),
                                 loop=asyncio.get_running_loop()))
 
     print("Scooter init done.")

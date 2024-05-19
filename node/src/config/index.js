@@ -11,5 +11,7 @@ module.exports = {
     kafkaBrokers: process.env.KAFKA_BROKERS ? process.env.KAFKA_BROKERS.split(',') : ['localhost:9092'],
     kafkaClientId: process.env.KAFKA_CLIENT_ID || 'my-app',
     kafkaGroupId: process.env.KAFKA_GROUP_ID || 'test-group',
-    kafkaTopic: process.env.KAFKA_TOPIC || 'scooter_commands'
+    kafkaTopicCommands: process.env.KAFKA_TOPIC_COMMANDS || 'scooter_commands',
+    kafkaTopicUpdates: process.env.KAFKA_TOPIC_UPDATES || 'scooter_updates',
+    kafkaTopicPositions: process.env.KAFKA_TOPIC_POSITION || 'scooter_positions'
 };

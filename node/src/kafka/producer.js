@@ -1,5 +1,5 @@
 const { Kafka } = require('kafkajs');
-const { kafkaBrokers, kafkaClientId, kafkaGroupId, kafkaTopic } = require('../config');
+const { kafkaBrokers, kafkaClientId, kafkaGroupId, kafkaTopicCommands } = require('../config');
 
 
 const kafka = new Kafka({
@@ -14,7 +14,7 @@ const sendKafkaMessage = async (id, body) => {
     await producer.connect();
     console.log(`Sending message: %o %o`, id, body);
     await producer.send({
-        topic: kafkaTopic,
+        topic: kafkaTopicCommands,
         messages: [
             { value: JSON.stringify({ id, ...body }) },
         ],

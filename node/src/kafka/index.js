@@ -1,5 +1,5 @@
 const { Kafka } = require('kafkajs');
-const {consumeKafkaMessage} = require('./consumer');
+const { consumeKafkaMessage_updates, consumeKafkaMessage_positions} = require('./consumer');
 const { kafkaBrokers, kafkaClientId, kafkaGroupId, kafkaTopic } = require('../config');
 
 const kafka = new Kafka({
@@ -9,7 +9,8 @@ const kafka = new Kafka({
 
 
 const connectKafka = async () => {
-    await consumeKafkaMessage();
+    await consumeKafkaMessage_updates();
+    await consumeKafkaMessage_positions();
 };
 
 module.exports = { connectKafka };

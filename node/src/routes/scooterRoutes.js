@@ -19,6 +19,13 @@ router.get('/:id', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         console.log(`Updating scooter: %o , id: %o `, req.body, req.params.id);
+        if (req.params.id === "all")
+            for (let x in ["1_1", "1_2", "1_3", "1_4", "1_5", "1_6", "1_7", "1_8", "1_9", "1_10"]) {
+                const outcome = await sendKafkaMessage(x, req.body);
+                if (!outcome) {
+                    return res.status(404).json({ message: 'Something went wrong while sending message' });
+                }
+            }
         const outcome = await sendKafkaMessage(req.params.id, req.body);
         if (!outcome) {
             return res.status(404).json({ message: 'Something went wrong while sending message' });

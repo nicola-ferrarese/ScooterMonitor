@@ -15,10 +15,10 @@ async function readScooter(id) {
     return Scooter.findOne({"id":id});
 }
 
-async function updateScooter(id, updateData) {
+async function updateScooterPosition(id, updateData) {
     const io = require('../middleware/socket').getIO();
-    console.log(`Sending update to scooter ${id}: ${JSON.stringify(updateData)}`);
-    io.emit('scooterUpdate', updateData);
+    console.log(`[Skt.io] Sending update ${id}: ${JSON.stringify(updateData)}`);
+    io.emit('positionUpdate', updateData);
 
     try {
         const data = {
@@ -38,7 +38,7 @@ async function updateScooter(id, updateData) {
 
 async function updateTrip(id, updateData) {
     const io = require('../middleware/socket').getIO();
-    console.log(`Sending update to trip ${id}: ${JSON.stringify(updateData)}`);
+    console.log(`[Skt.io] Sending update ${id}: ${JSON.stringify(updateData)}`);
     io.emit('tripUpdate', updateData);
     try {
         const event = updateData.event;
@@ -94,4 +94,4 @@ async function deleteScooter(id) {
     return await Scooter.findByIdAndDelete(id);
 }
 
-module.exports = { createScooter, readScooter, deleteScooter, updateScooter, sendDestination, updateTrip };
+module.exports = { createScooter, readScooter, deleteScooter, updateScooterPosition, updateTrip };

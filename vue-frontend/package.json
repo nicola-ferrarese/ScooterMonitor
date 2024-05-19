@@ -12,7 +12,8 @@
     "l.movemarker": "^0.0.12",
     "leaflet": "^1.9.4",
     "socket.io-client": "^4.7.5",
-    "vue": "^3.2.13"
+    "vue": "^3.2.13",
+    "vue-router": "^4.3.2"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",
