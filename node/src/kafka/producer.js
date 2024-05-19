@@ -19,6 +19,7 @@ const sendKafkaMessage = async (id, body) => {
             { value: JSON.stringify({ id, ...body }) },
         ],
     });
+    console.log(JSON.stringify({ id, ...body }));
     return true;
 }
 

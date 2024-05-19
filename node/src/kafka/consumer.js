@@ -1,6 +1,6 @@
 const { Kafka } = require('kafkajs');
 const { kafkaBrokers, kafkaClientId, kafkaGroupId, kafkaTopic } = require('../config');
-const { updateScooter } = require('../db/mongoOperations');
+const { updateScooter, updateTrip } = require('../db/mongoOperations');
 
 const kafka = new Kafka({
     clientId: kafkaClientId,
@@ -16,11 +16,14 @@ const consumeKafkaMessage = async () => {
         eachMessage: async ({ topic, partition, message }) => {
             const msg = JSON.parse(message.value.toString());
 
-            if (msg.status !== undefined) {
-                console.log(`Received message: %o`, msg);
-            }
+            console.log(`Received message: %o`, msg);
 
-            let x = updateScooter(msg.id, msg);
+            if (msg.event !== undefined) {
+                updateTrip(msg.id, msg);
+            }
+            else {
+                await updateScooter(msg.id, msg);
+            }
         },
     });
 }

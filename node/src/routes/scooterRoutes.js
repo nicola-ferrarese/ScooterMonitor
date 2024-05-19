@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const { createScooter, readScooter, updateScooter, deleteScooter } = require('../db/mongoOperations');
 const { sendKafkaMessage } = require('../kafka/producer');
+
 router.get('/:id', async (req, res) => {
     try {
         const scooter = await readScooter(req.params.id);
@@ -17,6 +18,7 @@ router.get('/:id', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
     try {
+        console.log(`Updating scooter: %o , id: %o `, req.body, req.params.id);
         const outcome = await sendKafkaMessage(req.params.id, req.body);
         if (!outcome) {
             return res.status(404).json({ message: 'Something went wrong while sending message' });

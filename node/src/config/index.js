@@ -3,7 +3,7 @@ require('dotenv').config();
 module.exports = {
     // MongoDB
     mongoUrl: process.env.MONGO_URL || 'mongodb://localhost:27017',
-    dbName: process.env.DB_NAME || 'mydatabase',
+    dbName: process.env.DB_NAME || 'Scooter',
     mongoUser: process.env.MONGO_USER || 'rootuser',
     mongoPass: process.env.MONGO_PASS || 'rootpass',
     mongoauthSource: process.env.MONGO_AUTH_SOURCE || 'admin',

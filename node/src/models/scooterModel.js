@@ -1,4 +1,3 @@
-// src/models/scooterModel.js
 const mongoose = require('mongoose');
 
 const scooterSchema = new mongoose.Schema({
@@ -6,15 +5,18 @@ const scooterSchema = new mongoose.Schema({
     model: String,
     status: {
         type: String,
-        enum: ['available', 'in service', 'unavailable'],
+        enum: ['available', 'in-use', 'unavailable'],
         default: 'available'
     },
+    currentTripId: String,
     lastCheck: Date,
     batteryLevel: Number,
     location: {
         latitude: Number,
         longitude: Number
-    }
-});
+    },
+}, { collection: 'scooters' });
 
-module.exports = mongoose.model('Scooter', scooterSchema);
+const Scooter = mongoose.model('Scooter', scooterSchema, 'scooters');
+module.exports = Scooter;
+
