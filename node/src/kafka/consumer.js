@@ -7,12 +7,11 @@ const kafka = new Kafka({
     brokers: kafkaBrokers,
 });
 
-const consumer = kafka.consumer({ groupId: kafkaGroupId });
 
-const connectKafka = async () => {
+const consumeKafkaMessage = async () => {
+    const consumer = kafka.consumer({ groupId: kafkaGroupId });
     await consumer.connect();
     await consumer.subscribe({ topic: kafkaTopic, fromBeginning: false });
-
     await consumer.run({
         eachMessage: async ({ topic, partition, message }) => {
             const msg = JSON.parse(message.value.toString());
@@ -20,9 +19,11 @@ const connectKafka = async () => {
             if (msg.status !== undefined) {
                 console.log(`Received message: %o`, msg);
             }
-            await updateScooter(msg.id, msg.status, msg.node_id);
+
+            let x = updateScooter(msg.id, msg);
         },
     });
-};
+}
 
-module.exports = { connectKafka };
+module.exports = { consumeKafkaMessage };
+
