@@ -257,13 +257,6 @@ class Scooter:
                 if position == positions[-1]:
                     self.send_update(distance=distance)
 
-                #else:
-                #    self.remaining_distance = nx.shortest_path_length(self.graph, self.current_node, self.end_node,
-                #                                                      weight='length')
-                 #   position = positions[-1]
-                 #   self.send_coordinates(x=position[0], y=position[1])
-
-            #await self.stop_navigation()
             print(len(self.route))
             if len(self.route) == 1:
                 await self.stop_navigation()
