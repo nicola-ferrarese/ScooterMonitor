@@ -45,184 +45,116 @@ L.Icon.Default.mergeOptions({
   shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
 });
 
-const setProperIcons = (markers) => {
-  Object.entries(markers).forEach( item => {
-    let marker = item[1]
-    const id = item[0]
-    if(marker.getMarker()) {
-      if(!scooterMap.get(id)) {
-        scooterMap.set(id, ['available', false])
-      }
-      if(scooterMap.get(id).includes('available')) {
-        marker.getMarker().setIcon(greenIcon);
-      } else {
-        marker.getMarker().setIcon(redIcon);
-      }
-      if(scooterMap.get(id).includes('-clicked')) {
-        marker.getMarker().setIcon(violetIcon);
-      }
-
-    }
-  });
-}
-
-const actionAnimation = (markers, type) => {
-  if(!markers || Object.values(markers).length === 0) {
-    console.log('No markers found')
-    return
-  }
-  // iterate over markers, extracting id and instance
 
 
-  Object.values(markers).forEach( marker => {
-    if(marker.getMarker()) {
-      marker.getMarker().setIcon(greenIcon);
-      marker = marker.getMarker()
-      //type === 'hidePolylines' && item.instance.hidePolylines(hidePolylines)
-      //type === 'hideMarkers' && item.instance.getMarker().hideMarker(hideMarker)
-      type === 'stopAll' && marker.stop()
-      type === 'disableAllFollowMarker' && marker.activeFollowMarker(false)
+// Icons initialization and setting as before
 
-      //type === 'activeAnimMarker' && item.instance?.getMarker()?.activeAnimate(animateMarker)
-      //type === 'activeAnimPolyline' && item.instance?.getCurrentPolyline()?.activeAnimate(animatePolyline)
-    }
-  });
-  setProperIcons(markers)
-}
-// disable all follow marker when zoom and drag on map
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+  iconUrl: require('leaflet/dist/images/marker-icon.png'),
+  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+});
 
 const scooterMap = new Map();
 
-const resetClickMarker = (scooterMap) => {
-  scooterMap.forEach((value, key) => {
-    if(value){
-      if(value.includes('-clicked')) {
-        scooterMap.set(key, value.replace('-clicked', ''))
-    }}
-  })
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+  iconUrl: require('leaflet/dist/images/marker-icon.png'),
+  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+});
+
+
+const setProperIcons = () => {
+  scooterMap.forEach(markerState => {
+    const marker = markerState.marker;
+    let icon = markerState.inUse ? redIcon : greenIcon;
+    icon = markerState.clicked ? violetIcon : icon;
+    marker.getMarker().setIcon(icon);
+  });
 }
 
 export default {
   name: 'MapComponent',
   data() {
-
     return {
       map: null,
-      markers: {} // Array to keep track of markers
+      markers: {} // This remains to store the marker references
     };
   },
   mounted() {
     this.initMap();
     this.initSocket();
-    // add event listener for zoom and drag
-    this.addListerners()
-    this.map.on('click', this.logClick);
+    this.addListeners();
+
   },
   methods: {
-    logClick(e) {
-      console.log('Clicked on map at:', e.latlng);
-    },
+
     initMap() {
-      // Initialize the map
-      this.map = L.map('map').setView([ 44.14, 12.23], 13);  // Coordinates for London
-      console.log('Map initialized');
+      this.map = L.map('map').setView([44.14, 12.23], 13);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors NicoFerraSpacca'
+        attribution: '© OpenStreetMap contributors'
       }).addTo(this.map);
     },
     initSocket() {
-      // Initialize the socket connection
-      console.log('Connecting to socket.io server');
       const socket = io('http://localhost:3000');
-      console.log('Connected to socket.io server');
-      socket.on('scooterUpdate', (data) => {
-        // Example: Update the marker position
-        this.updateScooterMarker(data);
+      console.log('Connected to socket server.');
+      socket.on('scooterUpdate', this.updateScooterMarker);
+    },
+    addListeners() {
+      this.map.on('dragstart', () => {
+        scooterMap.forEach(markerState => markerState.clicked = false);
+        setProperIcons();
       });
     },
-    addListerners() {
-      this.map.on('click', () => {
-        console.log('click');
-
-        resetClickMarker(scooterMap)
-        actionAnimation(this.markers, 'disableAllFollowMarker')
-
-      });
-      this.map.on('dragstart', () => {
-        console.log('Drag start');
-        resetClickMarker(scooterMap)
-        actionAnimation(this.markers, 'disableAllFollowMarker')
-      });
+    updateScooterMarkers(data) {
+      if (data.event === 'update' || data.event === 'start'){
+        scooterMap.get(data.id).inUse = true;
+      }
+      if (data.event === 'end'){
+        scooterMap.get(data.id).inUse = false;
+      }
     },
     updateScooterMarker(data) {
-      console.log('Updating scooter marker');
-      console.log(data);
-      if (data.event === 'start' || data.event === 'update'){
-        scooterMap.set(data.id, 'in-use')
-      }
-      if (data.event === 'end') {
-        scooterMap.set(data.id, 'available')
-      }
-      setProperIcons(this.markers)
+      console.log('Received data:', data);
 
       if (!data.id || !data.lat || !data.lon) {
-        console.error('Invalid data received:', data);
-        return;
-      }
-
-      const id = data.id;
-      const lat = data.lat;
-      const lon = data.lon;
-      if (this.markers[id] && data.lon !== 'undefined' ) {
-        //this.markers[id].setLatLng([lat, lon]);
-        console.log('Moving marker to ' + lon + ', ' + lat);
-        this.markers[id].addMoreLine([lat, lon], {
-          animatePolyline: true,
-          duration: 3000,
-        });
-        this.markers[id].hidePolylines(false)
-
-
-
-
-      } else {
-        // If the marker doesn't exist, create it and add it to the map
-        //const marker = L.marker([lat, lon]).addTo(this.map);
-        const marker = new L.MoveMarker([[lat, lon]],{
-          animate: true,
-          color: 'red',
-          weight: 5,
-          hidePolylines: true,
-          duration: 3000,
-          removeFirstLines: false,
-          maxLengthLines: 2,
-        },).addTo(this.map);
-        marker.getMarker().setIcon(greenIcon);
-
-        this.markers[id] = marker;
-        Object.entries(this.markers).forEach(item=> {
-          let marker = item[1]
-          let id = item[0]
-          console.log('Marker:', marker);
-          console.log('ID:', id);
-          if(marker) {
-            marker.getMarker().on('click', () => {
-              console.log('Marker clicked');
-              actionAnimation(this.markers, 'disableAllFollowMarker')
-              let x = scooterMap.get(id)
-              scooterMap.set(id, x+"-clicked")
-              marker.getMarker().activeFollowMarker(true)
-            });
+          if (data.event){
+            this.updateScooterMarkers(data)
+            return;
           }
-        });
-      }
+          return;
+        }
+
+      const markerState = scooterMap.get(data.id) || {
+        marker: new L.MoveMarker([[data.lat, data.lon]], {
+          animate: true,
+          duration: 3000,
+        }).addTo(this.map),
+        inUse: false,
+        clicked: false
+      };
+      console.log('Marker state:', markerState);
+      console.log(scooterMap);
+
+      // Update position
+      markerState.marker.addMoreLine([data.lat, data.lon], {
+        animate: true,
+        duration: 3000,
+      });
 
 
 
+      // Click event
+      markerState.marker.getMarker().off('click').on('click', () => {
+        markerState.clicked = !markerState.clicked; // Toggle clicked state
+        setProperIcons();
+        markerState.marker.bindPopup(`Marker ${data.id} clicked.`).openPopup();
+      });
+      // Update map and state
+      scooterMap.set(data.id, markerState);
+      setProperIcons();
     }
-
-
-
   }
 };
 </script>
@@ -233,6 +165,3 @@ export default {
   height: 100%;
 }
 </style>
-
-// https://github.com/pointhi/leaflet-color-markers
-
