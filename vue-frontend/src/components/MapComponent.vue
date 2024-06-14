@@ -1,5 +1,10 @@
 <template>
   <div id="map" ></div>
+  <button v-if="showBottomBar" class="back-button" @click="hideBottomBar">Back</button>
+  <BottomBar
+      :visible="showBottomBar"
+      :scooterData="selectedScooter"
+  />
 </template>
 
 <script>
@@ -7,6 +12,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import io from 'socket.io-client';
 import "l.movemarker";
+import BottomBar from './BottomBar.vue'; // Import the BottomBar component
+
 
 var greenIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
@@ -48,16 +55,21 @@ const setProperIcons = () => {
 
 export default {
   name: 'MapComponent',
+  components: {
+    BottomBar
+  },
   data() {
     return {
       map: null,
-      markers: {}
+      markers: {},
+      showBottomBar: false,
+      selectedScooter: {}
     };
   },
   mounted() {
     this.initMap();
-    this.initSocket();
     this.addListeners();
+    this.initSocket();
   },
   methods: {
     initMap() {
@@ -71,10 +83,15 @@ export default {
       console.log('Connected to socket server.');
       socket.on('positionUpdate', this.updateScooterPosition);
       socket.on('tripUpdate', this.updateScooterTrip);
+      socket.on('allScooters', this.updateAllScooters );
+      // Request all scooters from the server
+      socket.emit('requestAllScooters');
     },
     addListeners() {
       this.map.on('dragstart', () => {
-        scooterMap.forEach(markerState => markerState.clicked = false);
+        scooterMap.forEach(instance => instance.clicked = false);
+        scooterMap.forEach(instance => instance.marker.getMarker().activeFollowMarker(false));
+        this.showBottomBar = false;
         setProperIcons();
       });
     },
@@ -90,9 +107,18 @@ export default {
           scooterMap.forEach(markerState => markerState.clicked = false);
           markerState.clicked = !markerState.clicked;
           setProperIcons();
-          //marker.bindPopup(`Marker ${id} clicked.`).openPopup();
+          marker.getMarker().activeFollowMarker(true)
+          // TODO retrieve the path and print it on map
+          this.showBottomBar = true;
+          this.selectedScooter = {
+            id: id,
+            lat: lat,
+            lon: lon,
+            inUse: markerState.inUse
+          };
         }
       });
+      marker.hidePolylines(true)
 
       scooterMap.set(id, {
         marker: marker,
@@ -105,22 +131,25 @@ export default {
     updateScooterPosition(data) {
       console.log('Received position data:', data);
 
-      if (!data.id || !data.lat || !data.lon) {
-        return;
-      }
-
       let markerState = scooterMap.get(data.id);
+      let scooter = {id : data.id, lat : data.location.latitude, lon : data.location.longitude, inUse : data.inUse};
+
       if (!markerState) {
-        markerState = this.createMarker(data.id, data.lat, data.lon);
-        markerState.inUse = true;
+        markerState = this.createMarker(scooter.id, scooter.lat, scooter.lon);
+        //console.log('Created new marker:', markerState);
         scooterMap.set(data.id, markerState);
       }
 
       // Update position
-      markerState.marker.addMoreLine([data.lat, data.lon], {
+      console.log('Moving marker:', markerState);
+      markerState.marker.addMoreLine([scooter.lat, scooter.lon], {
         animate: true,
         duration: 3000,
       });
+      if (data.inUse) {
+        markerState.inUse = data.inUse;
+      }
+
 
       setProperIcons();
     },
@@ -141,18 +170,87 @@ export default {
       if (data.event === 'update' || data.event === 'start') {
         markerState.inUse = true;
       } else if (data.event === 'end') {
+        console.log('Trip ended:', data);
         markerState.inUse = false;
       }
 
       setProperIcons();
+    },
+    updateAllScooters(data) {
+      console.log('Received all scooters data:', data);
+
+      if (!data) {
+        return;
+      }
+
+      data.forEach(scooter => {
+        this.updateScooterPosition(scooter);
+      });
+    },
+    hideBottomBar() {
+      this.showBottomBar = false;
+      this.selectedScooter = null;
     }
   }
 };
+
+
 </script>
 
 <style scoped>
 #map {
   width: 100%;
   height: 100%;
+  position: relative;
+}
+
+.bottom-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  max-width: 100%;
+  background-color: #fff;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  z-index: 1000;
+}
+
+@media (min-width: 768px) {
+  .bottom-bar {
+    width: 66.66%;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+.scooter-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+button {
+  margin-top: 1rem;
+}
+
+.back-button {
+  position: fixed; /* Use fixed positioning to place it relative to the screen */
+  top: 130px; /* Adjust as necessary */
+  left: 10px; /* Adjust as necessary */
+  z-index: 1100;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  padding: 0.5rem;
+  cursor: pointer;
+  border-radius: 50%; /* Make the button round */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  width: 40px; /* Set a fixed width */
+  height: 40px; /* Set a fixed height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
 }
 </style>
+

@@ -28,7 +28,8 @@ export default {
     const password = ref('');
     const message = ref('');
     const router = useRouter();
-
+    // TODO: Implement the login as popup an same applies for sign in
+    // TODO: add expiration time for the token
     const login = () => {
       const socket = io('http://localhost:3000');
       socket.emit('login', { username: username.value, password: password.value }, (response) => {

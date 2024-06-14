@@ -23,6 +23,13 @@ export default {
 </script>
 
 <style>
+body {
+  margin: 0;
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f0f0f0;
+}
 #app {
   display: flex;
   flex-direction: column;
