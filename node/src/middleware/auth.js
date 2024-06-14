@@ -2,14 +2,30 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const bcrypt = require('bcrypt');
 
-
-const auth  = {
-    verifyToken: (token) => {
+const auth = {
+    verifyToken: async (token) => {
         try {
-            return jwt.verify(token, 'your_jwt_secret');
+            const decoded = jwt.verify(token, 'your_jwt_secret');
+            const user = await User.findById(decoded.id);
+            if (!user || user.activeToken !== token) {
+                return null;
+            }
+            console.log('[AUTH] Token verified');
+            return decoded;
         } catch (error) {
             return null;
         }
+    },
+    getUser: async (token) => {
+        const decoded = await auth.verifyToken(token);
+        if (!decoded) {
+            return null;
+        }
+        const user = await User.findById(decoded.id);
+        if (!user) {
+            return null;
+        }
+        return user;
     },
     signUp: async (data, callback) => {
         try {
@@ -38,15 +54,17 @@ const auth  = {
             if (!isPasswordValid) {
                 return callback({success: false, message: 'Invalid username or password'});
             }
-            const token = jwt.sign({id: user._id}, 'your_jwt_secret', {expiresIn: '1h'});
+            const token = jwt.sign({id: user._id}, 'your_jwt_secret', {expiresIn: '2h'});
+            user.activeToken = token;
+            await user.save();
             callback({success: true, message: 'Login successful', token});
         } catch (error) {
             console.error(error);
             callback({success: false, message: 'Login failed'});
         }
     },
-    getData: (token, callback) => {
-        const decoded = this.verifyToken(token);
+    getData: async (token, callback) => {
+        const decoded = await this.verifyToken(token);
         if (!decoded) {
             return callback({success: false, message: 'Invalid token'});
         }

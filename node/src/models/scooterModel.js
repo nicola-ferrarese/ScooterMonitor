@@ -8,7 +8,7 @@ const scooterSchema = new mongoose.Schema({
         enum: ['available', 'in-use', 'unavailable'],
         default: 'available'
     },
-    currentTripId: String,
+    tripId: String,
     lastCheck: Date,
     batteryLevel: Number,
     location: {

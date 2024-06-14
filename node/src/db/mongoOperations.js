@@ -3,7 +3,7 @@ const Scooter = require('../models/scooterModel');
 const TripSegment = require('../models/tripModel');
 const uuid = require('uuid');
 const {sendKafkaMessage} = require("../kafka/producer");
-
+const User = require("../models/userModel");
 
 
 async function createScooter(data) {
@@ -11,59 +11,76 @@ async function createScooter(data) {
     return await scooter.save();
 }
 
-async function readScooter(id) {
-    return Scooter.findOne({"id":id});
-}
+const getScooter = async (scooterId) => {
+    const scooter = await Scooter.findOne({ id: scooterId });
+    return scooter;
+};
 
-async function updateScooterPosition(id, updateData) {
-    const io = require('../middleware/socket').getIO();
-    console.log(`[Skt.io] Sending update ${id}: ${JSON.stringify(updateData)}`);
-    io.emit('positionUpdate', updateData);
 
+async function updateScooterPosition(updateData) {
+
+    // TODO: double check to ensure is correctly updatingg the db
     try {
+        console.log(`Updating scooter: ${updateData.id}`);
         const data = {
+            id: updateData.id,
             location: {
                 longitude: updateData.lon,
                 latitude: updateData.lat
-            }
+            },
+            inUse: true
         }
         if (updateData.lat !== undefined) {
-            await Scooter.findOneAndUpdate({id: id}, data, {upsert: true, new: true, strict: false});
+            await Scooter.findOneAndUpdate({id: data.id}, data, {upsert: true, new: true, strict: false});
         }
-    } catch (error) {
+
+    }
+    catch (error) {
         console.error('Failed to update scooter:', error);
     }
 
 }
 
-async function updateTrip(id, updateData) {
-    const io = require('../middleware/socket').getIO();
-    console.log(`[Skt.io] Sending update ${id}: ${JSON.stringify(updateData)}`);
-    io.emit('tripUpdate', updateData);
+async function updateTrip(updateData) {
+
     try {
         const event = updateData.event;
+        const id = updateData.id;
+        const user = await User.findOne({currentRide: updateData.tripId}).lean();
         if (event === 'start'){
-            const tripId = uuid.v4();
-            const trip = new TripSegment({
-                scooterId: id,
-                tripId: tripId,
+            let trip = new TripSegment({
+                scooterId: updateData.id,
+                tripId: updateData.tripId,
                 start: {
                     longitude: updateData.start.lon,
                     latitude: updateData.start.lat
                 },
-                timestamp: updateData.timestamp
+                end: {
+                    longitude: updateData.start.lon,
+                    latitude: updateData.start.lat
+                },
+                timestamp: updateData.timestamp,
+                userId: user._id,
             });
             // perform trip.save and save the _id
+
+            console.log("Saving trip" + trip)
             const _id = (await trip.save())._id;
-            await Scooter.findOneAndUpdate({id: id}, {currentTripId: tripId, status: 'in-use'}, {upsert: true, new: true, strict: false});
+            await Scooter.findOneAndUpdate({id: id}, {tripId: updateData.tripId, status: 'in-use'}, {upsert: true, new: true, strict: false});
+
         }
         else if (event === 'end') {
-            await Scooter.findOneAndUpdate({id: id}, {currentTripId: null, status: 'available'}, {upsert: true, new: true, strict: false});
+            await Scooter.findOneAndUpdate({id: id}, {tripId: null, status: 'available', inUse: false}, {upsert: true, new: true, strict: false});
+            await Scooter.findOneAndUpdate({id: id}, {location: {longitude: updateData.end.lon, latitude: updateData.end.lat}}, {upsert: true, new: true, strict: false});
         }
         else if (event === 'update') {
-            let tripId = await Scooter.findOne({id: id}).select('currentTripId -_id');
-            tripId = tripId.currentTripId;
-            console.log(tripId)
+            const scooter = await Scooter.findOne({id: id});
+            let tripId = scooter.tripId;
+            console.log(`TripId: ${tripId}`);
+            if (tripId === null) {
+                await Scooter.findOneAndUpdate({id: id}, {tripId: updateData.tripId, status: 'in-use'}, {upsert: true, new: true, strict: false});
+            }
+            console.log(`TripId: ${tripId}`);
             await new TripSegment( {
                 scooterId: id,
                 tripId: tripId,
@@ -94,4 +111,4 @@ async function deleteScooter(id) {
     return await Scooter.findByIdAndDelete(id);
 }
 
-module.exports = { createScooter, readScooter, deleteScooter, updateScooterPosition, updateTrip };
+module.exports = { createScooter, getScooter, deleteScooter, updateScooterPosition, updateTrip };
