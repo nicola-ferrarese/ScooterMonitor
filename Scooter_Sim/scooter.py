@@ -5,6 +5,7 @@ import os
 import signal
 import threading
 import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 
 import networkx as nx
@@ -71,8 +72,9 @@ def run_consumer(scooter, loop, topic_commands):
                 message = json.loads(message)
                 if "id" in message.keys() and message['id'] == scooter.id:
                     if "command" in message.keys() and message["command"] is not None:
-                        print(f"Received command: {message['command']}")
-                        asyncio.run_coroutine_threadsafe(scooter.get_command_queue().put(message['command']), loop)
+                        print(f"Received command: {message}")
+                        data = { "command" : message['command'], "tripId": message['tripId'] if 'tripId' in message.keys() else None}
+                        asyncio.run_coroutine_threadsafe(scooter.get_command_queue().put(data), loop)
         print(f"[{scooter.get_id()}] Consumer stopped.")
     except KeyboardInterrupt:
         print("Keyboard interrupt in consumer.")
@@ -92,6 +94,7 @@ class Scooter:
         self.command_queue: Queue = command_queue
         self.loop = loop
         self.current_node = choose_random_node(graph)
+        self.trip_id = None
 
     def get_command_queue(self):
         return self.command_queue
@@ -128,11 +131,14 @@ class Scooter:
 
             # Otherwise, process the command
             if command_task in done:
-                command = command_task.result()  # Get the result of the command task
-                print(f"Scooter {self.id} received command: {command}")
+                payload = command_task.result()  # Get the result of the command task
+                print(f"Scooter {self.id} received command: {payload}")
+                command = payload['command']
+
                 # Example command processing logic
                 if command == 'start' and self.status == 'available' and stop_event.is_set() is False:
                     print(f"[{self.id}] -> start command in queue. Starting navigation.")
+                    self.trip_id = payload['tripId']
                     start_node = choose_random_node(self.graph) if self.current_node is None else self.current_node
                     asyncio.run_coroutine_threadsafe(self.start_navigation(start_node,
                                                                            choose_random_node(self.graph)), self.loop)
@@ -186,6 +192,7 @@ class Scooter:
             "id": self.id,
             "event": event if event is not None else "update",
             "distance": distance if distance is not None else 0,
+            "tripId": self.trip_id if self.trip_id is not None else "",
             "timestamp": int(time.time() * 1000),  # Convert to milliseconds
             'start': {
                 "lon": self.graph.nodes[self.route[0]]['x'],
@@ -203,6 +210,7 @@ class Scooter:
 
     async def start_navigation(self, start_node, end_node):
         self.status = 'navigating'
+        #self.trip_id = f"{self.id}_{uuid.uuid4()}"
         self.current_node = start_node
         self.end_node = end_node
         self.route = nx.shortest_path(self.graph, start_node, end_node, weight='length')
@@ -212,7 +220,7 @@ class Scooter:
         print(f"[{self.id}] -> navigate start navigation.")
         await asyncio.create_task(self.navigate())
         print(f"[{self.id}] -> navigate closed stopped navigation.")
-
+        self.send_update(event='end')
     async def navigate(self):
         while self.status == 'navigating':
             print(f"[{self.id}] -> navigating.")
@@ -224,7 +232,8 @@ class Scooter:
 
     async def stop_navigation(self):
         print(f"[{self.id}] -> stop navigation.")
-        self.send_update(event='end')
+        #self.send_update(event='end')
+        self.trip_id = None
         self.status = 'available'
         #self.send_coordinates(end=True)  # Send final coordinates
 
@@ -242,6 +251,8 @@ class Scooter:
             print(f"[{self.id}] -> make_step: {positions}")
 
             for position in positions:
+                if self.status != 'navigating':
+                    break
                 print(f"[{self.id}] -> make_step: {position}")
                 #if len(positions) > 3:
                 self.remaining_distance = nx.shortest_path_length(self.graph, self.current_node, self.end_node,
@@ -367,10 +378,13 @@ async def main(stop_event, graph_file_path="cesena.graphml"):
         scooters.append(Scooter(id=id, producer=producer, topics = topics, graph=graph, command_queue=Queue(),
                                 loop=asyncio.get_running_loop()))
 
+
+
     print("Scooter init done.")
     # Start listening for commands in each scooter
     for scooter in scooters:
         scooter.run_consumer_in_thread(loop=asyncio.get_running_loop())
+
     print("Scooter started listening.")
     # Process commands in each scooter
     tasks = [asyncio.create_task(scooter.process_commands()) for scooter in scooters]
