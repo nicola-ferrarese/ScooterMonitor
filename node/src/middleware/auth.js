@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
+const Scooter = require('../models/scooterModel');
 const bcrypt = require('bcrypt');
 
 const auth = {
@@ -64,12 +65,20 @@ const auth = {
         }
     },
     getData: async (token, callback) => {
-        const decoded = await this.verifyToken(token);
-        if (!decoded) {
+        let user = await User.findOne({activeToken: token});
+        if (!user) {
             return callback({success: false, message: 'Invalid token'});
         }
-        // Here you can fetch and return data for authenticated users
-        callback({success: true, message: 'Data retrieved', data: {}});
+        if (!user.currentRide) {
+            return callback({success: false, message: 'No active ride'});
+        }
+        const tripId = user.currentRide;
+        console.log(`[AUTH] Fetching data for trip ${tripId}`);
+        const scooter_utilized = await Scooter.findOne({tripId: tripId});
+        if (!scooter_utilized) {
+            return callback({success: false, message: 'Scooter not found'});
+        }
+        callback({success: true, message: 'Data retrieved', data: {scooter_id: scooter_utilized.id, tripId: scooter_utilized.tripId, user: user.username}});
     }
 }
 

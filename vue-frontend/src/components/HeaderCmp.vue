@@ -50,7 +50,8 @@ export default {
   watch: {
     '$route'() {
       this.isAuthenticated = !!localStorage.getItem('token');
-    }
+    },
+
   }
 };
 </script>

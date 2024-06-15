@@ -72,6 +72,12 @@ async function updateTrip(updateData) {
         else if (event === 'end') {
             await Scooter.findOneAndUpdate({id: id}, {tripId: null, status: 'available', inUse: false}, {upsert: true, new: true, strict: false});
             await Scooter.findOneAndUpdate({id: id}, {location: {longitude: updateData.end.lon, latitude: updateData.end.lat}}, {upsert: true, new: true, strict: false});
+
+            const latestTrip = await getDb().collection('tripView').findOne({ scooterId: id }, { sort: { _id: -1 } });
+            const userId = latestTrip ? latestTrip.userId : null;
+            if (userId) {
+                await User.findOneAndUpdate({_id: userId}, {currentRide: null}, {upsert: true, new: true, strict: false});
+            }
         }
         else if (event === 'update') {
             const scooter = await Scooter.findOne({id: id});

@@ -6,12 +6,27 @@
       <div v-if="localScooterData.inUse">
         <p>Trip Distance: {{ tripData.totalDistance }}</p>
         <p>Trip Cost: {{ tripData.totalCost }}</p>
-        <button @click="stopRide">Stop Ride</button>
+        <div v-if="showLoginPrompt">
+          Please log in to unlock a scooter.
+        </div>
+        <div v-else>
+          <button @click="stopRide">Stop Ride</button>
+        </div>
       </div>
       <div v-else>
         <button @click="unlockScooter">Unlock Scooter</button>
       </div>
     </div>
+  </div>
+
+  <div v-if="errorMessage" class="error">
+    {{ errorMessage }}
+    <div class="close-error" @click="closeErrorMessage"></div>
+  </div>
+
+  <div v-if="showLoginPrompt" class="error">
+    Please log in to unlock a scooter.
+    <div class="close-error" @click="closeLoginPrompt"></div>
   </div>
 </template>
 
@@ -32,7 +47,9 @@ export default {
         totalDistance: '',
         totalCost: ''
       },
-      loading: true
+      loading: true,
+      errorMessage: '',
+      showLoginPrompt: false,
     };
   },
   watch: {
@@ -68,6 +85,12 @@ export default {
     });
   },
   methods: {
+    closeErrorMessage() {
+      this.errorMessage = '';
+    },
+    closeLoginPrompt() {
+      this.showLoginPrompt = false;
+    },
     fetchScooterData() {
       if (this.localScooterData) {
         this.loading = true;
@@ -84,7 +107,9 @@ export default {
         });
       }
     },
-    unlockScooter() {
+    unlockScooter() {if (!localStorage.getItem('token')) {
+        this.showLoginPrompt = true;
+      } else {
       console.log("Scooter unlocked.");
       // TODO send start command, and update the localScooterData
       console.log("Starting ride for scooter ID:", this.localScooterData.id);
@@ -94,12 +119,29 @@ export default {
         token: localStorage.getItem('token')
       }, (response) => {
         if (response.error) {
-          console.error("Error starting ride:", response.error);
+          if (response.status !== null) {
+            if (response.status === "Already riding") {
+              this.errorMessage = 'You are already riding a scooter. Please stop the current ride first.';
+              this.$router.push('/map');
+            } else {
+              this.errorMessage = response.error;
+            }
+          }
+          else {
+            console.error("Error starting ride:", response.error);
+            localStorage.removeItem('token');
+            this.$router.push('/map');
+            this.errorMessage = 'Session expired. Please log in again.';
+          }
+          // display error message
+
+
         } else {
           console.log("Ride started successfully.", response);
           // Update local state as needed
         }
       });
+    }
     },
     stopRide() {
       console.log("Ride stopped.");
@@ -149,6 +191,32 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+.error {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 20px;
+  border: 1px solid #f5c6cb;
+  border-radius: 5px;
+  text-align: center;
+  width: 80%;
+  max-width: 500px;
+}
+
+.close-error {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 20px;
+  height: 20px;
+  background-color: #bf2222;
+  border-radius: 50%;
+  cursor: pointer;
 }
 
 button {

@@ -42,14 +42,53 @@ var violetIcon = new L.Icon({
   shadowSize: [41, 41]
 });
 
+var orangeIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+
 const scooterMap = new Map();
+const socket = io('http://localhost:3000');
 
 const setProperIcons = () => {
+  setUserScooter();
   scooterMap.forEach(markerState => {
     const marker = markerState.marker;
     let icon = markerState.inUse ? redIcon : greenIcon;
+    if (markerState.belongsToUser) {
+      console.log('Setting orange icon');
+      icon = orangeIcon;
+    }
     icon = markerState.clicked ? violetIcon : icon;
     marker.getMarker().setIcon(icon);
+  });
+
+}
+
+const setUserScooter = () => {
+  if (!localStorage.getItem('token')) {
+    return;
+  }
+  socket.emit('getData', localStorage.getItem('token'), (response) => {
+    if (response.success) {
+      console.log('User data:', response.data);
+      if (response.data) {
+        const markerState = scooterMap.get(response.data.scooter_id);
+        console.log('User scooter:', markerState);
+        if (markerState) {
+          scooterMap.set(response.data.scooter_id, {
+            ...markerState,
+            belongsToUser: true
+          });
+        }
+      }
+    }
+
   });
 }
 
@@ -79,7 +118,7 @@ export default {
       }).addTo(this.map);
     },
     initSocket() {
-      const socket = io('http://localhost:3000');
+
       console.log('Connected to socket server.');
       socket.on('positionUpdate', this.updateScooterPosition);
       socket.on('tripUpdate', this.updateScooterTrip);
@@ -92,7 +131,11 @@ export default {
         scooterMap.forEach(instance => instance.clicked = false);
         scooterMap.forEach(instance => instance.marker.getMarker().activeFollowMarker(false));
         this.showBottomBar = false;
+        this.$router.push('/header');
         setProperIcons();
+      });
+      this.map.on('click', () => {
+        this.$router.push('/header');
       });
     },
     createMarker(id, lat, lon) {
@@ -124,6 +167,7 @@ export default {
         marker: marker,
         inUse: false,
         clicked: false,
+        belongsToUser: false
       });
 
       return scooterMap.get(id);
@@ -172,6 +216,7 @@ export default {
       } else if (data.event === 'end') {
         console.log('Trip ended:', data);
         markerState.inUse = false;
+        markerState.belongsToUser = false;
       }
 
       setProperIcons();

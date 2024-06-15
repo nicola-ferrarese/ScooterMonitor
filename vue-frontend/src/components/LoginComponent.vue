@@ -38,6 +38,9 @@ export default {
           router.push('/map');
         } else {
           message.value = response.message;
+          localStorage.removeItem('token');
+          //update the header component
+
         }
       });
     };

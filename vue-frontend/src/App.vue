@@ -13,6 +13,7 @@
 import MapComponent from "@/components/MapComponent.vue";
 import HeaderCmp from "@/components/HeaderCmp.vue";
 
+
 export default {
   name: 'App',
   components: {
@@ -21,6 +22,8 @@ export default {
   }
 }
 </script>
+
+
 
 <style>
 body {

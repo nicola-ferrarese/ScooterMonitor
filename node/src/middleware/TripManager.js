@@ -9,13 +9,16 @@ const evaluateStart = async (scooter_id, token) => {
         const db = getDb();
         const scooter = await db.collection('scooters').findOne({ id: scooter_id });
 
-
         const user = await auth.getUser(token);
         if (!user) {
             return { error: 'Invalid token or wrong user' };
         }
+        if (user.currentRide !== null) {
+            // fetch the scooter that the user is currently riding, by looking in trips collection
+            const currentScooter = await db.collection('tripView').findOne({ tripId: user.currentRide });
 
-
+            return { error: `User already has a ride, ${currentScooter.scooterId}`, status: 'Already riding'};
+        }
         if (!scooter) {
             return { error: 'Scooter not found' };
         }
@@ -40,6 +43,7 @@ const evaluateStart = async (scooter_id, token) => {
     } catch (error) {
         console.error(`[Trip Manager] Failed to evaluate start: ${error}`);
         const user = await auth.getUser(token);
+
         await Scooter.updateOne({ id: scooter_id }, { $set: { status: 'available', inUse: false } });
         await User.updateOne({ _id: user._id }, { $set: { currentRide: null } });
         return { error: 'Failed to start ride' };
@@ -49,6 +53,7 @@ const evaluateStart = async (scooter_id, token) => {
 const evaluateStop = async (scooter_id, token) => {
     try {
         const user = await auth.getUser(token);
+
         if (!user) {
             return { error: 'Invalid token or wrong user' };
         }
