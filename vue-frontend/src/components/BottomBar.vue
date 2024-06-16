@@ -10,11 +10,11 @@
           Please log in to unlock a scooter.
         </div>
         <div v-else>
-          <button @click="stopRide">Stop Ride</button>
+          <button v-if="userLogged" @click="stopRide">Stop Ride</button>
         </div>
       </div>
       <div v-else>
-        <button @click="unlockScooter">Unlock Scooter</button>
+        <button v-if="userLogged" @click="unlockScooter">Unlock Scooter</button>
       </div>
     </div>
   </div>
@@ -50,7 +50,11 @@ export default {
       loading: true,
       errorMessage: '',
       showLoginPrompt: false,
+      userLogged: !!localStorage.getItem('token')
     };
+  },
+  beforeUnmount() {
+    window.removeEventListener('storage', this.updateUserLogged);
   },
   watch: {
     visible(newVal) {
@@ -67,9 +71,13 @@ export default {
       },
       immediate: true,
       deep: true
-    }
+    },
+
+
   },
   mounted() {
+    //window.addEventListener('storage', this.updateUserLogged);
+
     this.socket = io('http://localhost:3000');
 
     // Listen for real-time updates
@@ -83,8 +91,13 @@ export default {
         this.loading = false;
       }
     });
+    this.loading = false;
   },
   methods: {
+    updateUserLogged() {
+      console.log('User logged:', !!localStorage.getItem('token'));
+      this.userLogged = !!localStorage.getItem('token');
+    },
     closeErrorMessage() {
       this.errorMessage = '';
     },

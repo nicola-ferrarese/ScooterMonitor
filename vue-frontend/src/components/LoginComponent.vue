@@ -35,7 +35,12 @@ export default {
       socket.emit('login', { username: username.value, password: password.value }, (response) => {
         if (response.success) {
           localStorage.setItem('token', response.token);
-          router.push('/map');
+          if (response.data) {
+            console.log('---->', response.data);
+          }
+          router.push({name : 'MapComponent', data: response.data });
+          //update the header component
+          //router.push('/header');
         } else {
           message.value = response.message;
           localStorage.removeItem('token');

@@ -1,5 +1,6 @@
 <template>
   <div id="app">
+    <header class="logo" @click="navigateToMap">Scooter Monitoring</header>
     <HeaderCmp />
     <div class="main-content">
       <router-view />
@@ -42,5 +43,14 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
+}
+.header {
+
+}
+.logo {
+  font-size: 1.5em;
+  background-color: #333;
+  color: white;
+  padding: 10px 10px;
 }
 </style>

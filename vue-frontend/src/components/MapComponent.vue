@@ -2,8 +2,10 @@
   <div id="map" ></div>
   <button v-if="showBottomBar" class="back-button" @click="hideBottomBar">Back</button>
   <BottomBar
+      v-if="showBottomBar"
       :visible="showBottomBar"
       :scooterData="selectedScooter"
+      :key="bottomBarKey"
   />
 </template>
 
@@ -13,7 +15,7 @@ import 'leaflet/dist/leaflet.css';
 import io from 'socket.io-client';
 import "l.movemarker";
 import BottomBar from './BottomBar.vue'; // Import the BottomBar component
-
+//import { useRoute } from 'vue-router';
 
 var greenIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
@@ -71,25 +73,33 @@ const setProperIcons = () => {
 }
 
 const setUserScooter = () => {
-  if (!localStorage.getItem('token')) {
-    return;
-  }
+
+  //const scooterId = route
   socket.emit('getData', localStorage.getItem('token'), (response) => {
+    console.log('User data response:', response)
     if (response.success) {
       console.log('User data:', response.data);
       if (response.data) {
-        const markerState = scooterMap.get(response.data.scooter_id);
+        let id =  response.data.scooter_id;
+        const markerState = scooterMap.get(id);
         console.log('User scooter:', markerState);
         if (markerState) {
           scooterMap.set(response.data.scooter_id, {
             ...markerState,
             belongsToUser: true
           });
+
         }
       }
     }
-
+    else {
+      console.log('User data error:', response.message);
+      scooterMap.forEach(scooter => {
+        scooter.belongsToUser = false;
+      });
+    }
   });
+
 }
 
 export default {
@@ -102,8 +112,16 @@ export default {
       map: null,
       markers: {},
       showBottomBar: false,
-      selectedScooter: {}
+      selectedScooter: {},
+      bottomBarKey: 0
     };
+  },
+  watch: {
+    showBottomBar(newValue) {
+      if (newValue) {
+        this.bottomBarKey++; // Increment the key to force a reload of the BottomBar component
+      }
+    }
   },
   mounted() {
     this.initMap();
@@ -131,11 +149,14 @@ export default {
         scooterMap.forEach(instance => instance.clicked = false);
         scooterMap.forEach(instance => instance.marker.getMarker().activeFollowMarker(false));
         this.showBottomBar = false;
-        this.$router.push('/header');
+        //this.$router.push('/header');
         setProperIcons();
       });
       this.map.on('click', () => {
-        this.$router.push('/header');
+        setProperIcons();
+      });
+      this.map.on('change', () => {
+        setProperIcons();
       });
     },
     createMarker(id, lat, lon) {

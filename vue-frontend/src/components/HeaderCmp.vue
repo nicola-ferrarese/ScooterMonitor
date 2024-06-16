@@ -1,7 +1,6 @@
 <template>
   <header class="header">
     <div class="container">
-      <div class="logo" @click="navigateToMap">Scooter Monitoring</div>
       <nav>
         <button v-if="!isAuthenticated" class="btn" @click="navigateToLogin">Log In</button>
         <button v-if="!isAuthenticated" class="btn" @click="navigateToSignUp">Sign Up</button>
@@ -36,7 +35,6 @@ export default {
     const logout = () => {
       localStorage.removeItem('token');
       isAuthenticated.value = false;
-      router.push('/login');
     };
 
     return {
@@ -62,18 +60,19 @@ export default {
   color: white;
   padding: 10px 0;
 }
+.logo {
+  font-size: 1.5em;
+  cursor: pointer;
+}
 .container {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
 }
-.logo {
-  font-size: 1.5em;
-  cursor: pointer;
-}
+
 nav {
   display: flex;
   gap: 10px;
