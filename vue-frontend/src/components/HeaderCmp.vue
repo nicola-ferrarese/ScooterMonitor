@@ -5,6 +5,8 @@
         <button v-if="!isAuthenticated" class="btn" @click="navigateToLogin">Log In</button>
         <button v-if="!isAuthenticated" class="btn" @click="navigateToSignUp">Sign Up</button>
         <button v-if="isAuthenticated" class="btn" @click="logout">Log Out</button>
+        <button v-if="isAuthenticated" class="btn" @click="showTripViewList()">Stats</button>
+        <TripViewList v-if="showPopup" :visible="showPopup" :general="showPopup" @close="showPopup = false" />
       </nav>
     </div>
   </header>
@@ -13,9 +15,13 @@
 <script>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import TripViewList from './TripViewListComponent.vue';
 
 export default {
   name: 'HeaderComponent',
+  components: {
+    TripViewList
+  },
   setup() {
     const router = useRouter();
     const isAuthenticated = ref(!!localStorage.getItem('token'));
@@ -37,12 +43,18 @@ export default {
       isAuthenticated.value = false;
     };
 
+    const showPopup = ref(false);
+    const showTripViewList  = () => {
+      showPopup.value = true;
+    };
     return {
       isAuthenticated,
       navigateToLogin,
       navigateToSignUp,
       navigateToMap,
-      logout
+      logout,
+      showPopup,
+      showTripViewList
     };
   },
   watch: {

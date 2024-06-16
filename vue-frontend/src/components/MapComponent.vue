@@ -268,6 +268,7 @@ export default {
   width: 100%;
   height: 100%;
   position: relative;
+  z-index: 0;
 }
 
 .bottom-bar {
@@ -304,7 +305,7 @@ button {
   position: fixed; /* Use fixed positioning to place it relative to the screen */
   top: 130px; /* Adjust as necessary */
   left: 10px; /* Adjust as necessary */
-  z-index: 1100;
+  z-index: 11;
   background-color: #fff;
   border: 1px solid #ccc;
   padding: 0.5rem;

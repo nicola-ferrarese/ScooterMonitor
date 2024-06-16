@@ -4,6 +4,7 @@ const  Scooter  = require('../models/scooterModel');
 const  User  = require('../models/userModel');
 const  auth  = require('../middleware/auth');
 const { v4: uuidv4 } = require('uuid');
+const  TripView  = require('../models/tripViewModel');
 const evaluateStart = async (scooter_id, token) => {
     try {
         const db = getDb();
@@ -69,5 +70,19 @@ const evaluateStop = async (scooter_id, token) => {
         return { error: 'Failed to stop ride' };
     }
 };
-
-module.exports = { evaluateStart ,evaluateStop};
+const getTripView = async (scooter_id) => {
+    try {
+        let trips;
+        console.log("asdfksa" + scooter_id)
+        if (!scooter_id) {
+            trips = await TripView.find().sort({ date: -1 }).lean();
+        }
+        else {
+            trips = await TripView.find({ scooterId: scooter_id }).sort({ date: -1 }).lean();
+        }
+        return ({ success: true, trips });
+    } catch (error) {
+            return({ success: false, message: error.message });
+    }
+}
+module.exports = { evaluateStart ,evaluateStop, getTripView};

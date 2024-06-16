@@ -17,6 +17,10 @@
         <button v-if="userLogged" @click="unlockScooter">Unlock Scooter</button>
       </div>
     </div>
+    <div>
+      <button @click="showTripViewList(localScooterData.id)">Show Trip Views</button>
+      <TripViewList v-if="showPopup" :visible="showPopup" :scooterId="localScooterData.id" @close="showPopup = false" />
+    </div>
   </div>
 
   <div v-if="errorMessage" class="error">
@@ -32,12 +36,32 @@
 
 <script>
 import io from 'socket.io-client';
+import { ref } from 'vue';
+import TripViewList from './TripViewListComponent.vue';
 
 export default {
   name: 'BottomBar',
+  components: {
+    TripViewList
+  },
   props: {
     visible: Boolean,
     scooterData: Object
+  },
+  setup() {
+    const showPopup = ref(false);
+    const scooterId = ref(null);
+
+    const showTripViewList  = (id) => {
+        scooterId.value = id;
+        showPopup.value = true;
+    };
+
+    return {
+      showPopup,
+      showTripViewList,
+      scooterId
+    };
   },
   data() {
     return {
