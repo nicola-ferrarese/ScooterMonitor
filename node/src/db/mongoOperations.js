@@ -66,7 +66,7 @@ async function updateTrip(updateData) {
 
             console.log("Saving trip" + trip)
             const _id = (await trip.save())._id;
-            await Scooter.findOneAndUpdate({id: id}, {tripId: updateData.tripId, status: 'in-use'}, {upsert: true, new: true, strict: false});
+            await Scooter.findOneAndUpdate({id: id}, {tripId: updateData.tripId, status: 'in-use', inUse: true}, {upsert: true, new: true, strict: false});
 
         }
         else if (event === 'end') {
@@ -84,7 +84,7 @@ async function updateTrip(updateData) {
             let tripId = scooter.tripId;
             console.log(`TripId: ${tripId}`);
             if (tripId === null) {
-                await Scooter.findOneAndUpdate({id: id}, {tripId: updateData.tripId, status: 'in-use'}, {upsert: true, new: true, strict: false});
+                await Scooter.findOneAndUpdate({id: id}, {tripId: updateData.tripId, status: 'available'}, {upsert: true, new: true, strict: false});
             }
             console.log(`TripId: ${tripId}`);
             await new TripSegment( {

@@ -49,7 +49,7 @@ const auth = {
             const {username, password} = data;
             const user = await User.findOne({username});
             if (!user) {
-                return callback({success: false, message: 'Invalid username or password'});
+                return callback({success: false, message: 'Invalid username'});
             }
             const isPasswordValid = await bcrypt.compare(password, user.password);
             if (!isPasswordValid) {
@@ -58,6 +58,12 @@ const auth = {
             const token = jwt.sign({id: user._id}, 'your_jwt_secret', {expiresIn: '2h'});
             user.activeToken = token;
             await user.save();
+            if (user.currentRide !== null) {
+                const scooter = await Scooter.findOne({tripId: user.currentRide});
+                if (scooter) {
+                    return callback({success: true, message:  'Login successful', token,  data: {scooter_id: scooter.id, tripId: scooter.tripId, user: user.username}});
+                }
+            }
             callback({success: true, message: 'Login successful', token});
         } catch (error) {
             console.error(error);
