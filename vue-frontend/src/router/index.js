@@ -7,7 +7,7 @@ const routes = [
     { path: '/login', component: LoginComponent },
     { path: '/signup', component: SignUpComponent },
     { path: '/header', component: HeaderComponent, name: 'Header' },
-    { path: '/map', MapComponent, name: 'MapComponent' },
+    { path: '/map', component: MapComponent, name: 'MapComponent' },
     //{ path: '/', redirect: '/map' }
 ];
 

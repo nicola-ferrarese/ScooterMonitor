@@ -73,7 +73,6 @@ const evaluateStop = async (scooter_id, token) => {
 const getTripView = async (scooter_id) => {
     try {
         let trips;
-        console.log("asdfksa" + scooter_id)
         if (!scooter_id) {
             trips = await TripView.find().sort({ date: -1 }).lean();
         }

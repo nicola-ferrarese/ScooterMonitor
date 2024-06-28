@@ -15,7 +15,13 @@
         <div v-for="trip in sortedTrips" :key="trip.tripId" class="trip-item">
           <p>Scooter ID: {{ trip.scooterId }}</p>
           <p>Total Distance: {{ trip.totalDistance }}</p>
-          <p>Date: {{ new Date(trip.date).toLocaleDateString() }}</p>
+          <p>Cost: {{ trip.totalCost }}</p>
+          <p>Duration: {{ trip.duration }} minutes</p>
+          <p>
+            Date: {{ new Date(trip.end).toLocaleDateString() }}
+          </p>
+          <p>Start Time: {{ new Date(trip.start).toLocaleTimeString() }}
+            End Time: {{ new Date(trip.end).toLocaleTimeString() }}</p>
         </div>
       </div>
       <button @click="closePopup">Close</button>

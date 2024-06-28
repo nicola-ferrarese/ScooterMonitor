@@ -36,7 +36,7 @@ export default {
   },
   computed: {
     ...mapState(['token', 'socket', 'scooterId']),
-    ...mapGetters(['tripId', 'isRiding', 'getToken']),
+    ...mapGetters(['tripId', 'isRiding', 'token', "isAuthenticated"]),
   },
   watch: {
     showBottomBar(newValue) {
@@ -173,13 +173,18 @@ export default {
       });
     },
     setUserScooter() {
-      if (!this.scooterId) {
-        console.log('No scooter ID provided.');
-        console.log('token:', this.getToken);
-        if (this.token) {
-          this.fetchUserData(this.token);
-        }
+      //use vuex store getter
+      console.log('isAuthenticated:', this.isAuthenticated);
+      if (!this.isAuthenticated) {
+        scooterMap.forEach(markerState => {
+          markerState.belongsToUser = false;
+        });
+        return;
       }
+      if (this.token) {
+        this.fetchUserData(this.token);
+      }
+
       console.log(this.scooterId);
       if (this.scooterId) {
         const markerState = scooterMap.get(this.scooterId);

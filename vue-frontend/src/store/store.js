@@ -13,13 +13,19 @@ const store = createStore({
     },
     mutations: {
         setUser(state, user) {
+            console.log('Setting user: ', user);
             state.username = user.username;
             state.token = user.token;
             state.tripId = user.tripId;
             state.isRiding = user.isRiding;
             state.scooterId = user.scooterId;
         },
+        setToken(state, data) {
+            console.log('Setting token: ', data);
+            state.token = data.token;
+        },
         clearUser(state) {
+            console.log('Clearing user');
             state.username = null;
             state.token = null;
             state.tripId = null;
@@ -31,15 +37,21 @@ const store = createStore({
         },
     },
     actions: {
+        setToken({ commit }, data) {
+            console.log('Setting token: ', data);
+            commit('setToken', data);
+        },
         fetchUserData({ commit }, token) {
             // Replace with actual API call
             if (!this.socket) {
                 this.socket = io('http://localhost:3000');
             }
+            console.log('Fetching user data');
             this.socket.emit('getData', token, (response) => {
                 if (response.success) {
+                    console.log('User data: ', response.data);
                     commit('setUser', {
-                        username: response.data.username,
+                        username: response.data.user,
                         token: token,
                         tripId: response.data.scooter_id,
                         isRiding: !!response.data.scooter_id,
@@ -62,7 +74,7 @@ const store = createStore({
         user: state => state.username,
         tripId: state => state.tripId,
         isRiding: state => state.isRiding,
-        getToken: state => state.token,
+        token: state => state.token,
     },
 });
 

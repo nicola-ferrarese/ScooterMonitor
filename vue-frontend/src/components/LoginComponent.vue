@@ -20,6 +20,7 @@
 import { ref } from 'vue';
 import { io } from 'socket.io-client';
 import { useRouter } from 'vue-router';
+import { useStore } from 'vuex';
 
 export default {
   name: 'LoginComponent',
@@ -28,6 +29,7 @@ export default {
     const password = ref('');
     const message = ref('');
     const router = useRouter();
+    let store = useStore(); // Access the Vuex store
     // TODO: Implement the login as popup an same applies for sign in
     // TODO: add expiration time for the token
     const login = () => {
@@ -35,17 +37,21 @@ export default {
       socket.emit('login', { username: username.value, password: password.value }, (response) => {
         if (response.success) {
           localStorage.setItem('token', response.token);
-          if (response.data) {
-            console.log('---->', response.data);
+          if (!store){
+            console.log('store is null');
+            store = useStore();
           }
-          router.push({name : 'MapComponent', data: response.data });
-          //update the header component
-          //router.push('/header');
+          store.dispatch('setToken', { // Dispatch an action to the store
+            //username: response.data.username,
+            token: response.token,
+            //tripId: response.data.tripId,
+            //isRiding: response.data.isRiding,
+            //scooterId: response.data.scooterId,
+          });
+          router.push('/');
         } else {
           message.value = response.message;
           localStorage.removeItem('token');
-          //update the header component
-
         }
       });
     };

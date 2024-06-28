@@ -6,6 +6,7 @@
       <div v-if="localScooterData.inUse">
         <p>Trip Distance: {{ tripData.totalDistance }}</p>
         <p>Trip Cost: {{ tripData.totalCost }}</p>
+        <p>Trip Duration: {{ tripData.duration }} minutes </p>
         <div v-if="showLoginPrompt">
           Please log in to unlock a scooter.
         </div>
@@ -68,7 +69,8 @@ export default {
       localScooterData: {},
       tripData: {
         totalDistance: '',
-        totalCost: ''
+        totalCost: '',
+        duration: ''
       },
       loading: true,
       errorMessage: '',

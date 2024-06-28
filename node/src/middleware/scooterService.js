@@ -63,7 +63,8 @@ const fetchScooterDataDB = async (scooter_id, callback) => {
             scooter.trip = {
                 ...scooter.trip,
                 totalDistance: trip.totalDistance,
-                totalCost: trip.totalCost
+                totalCost: trip.totalCost,
+                duration: (trip.duration / 1000 / 60).toFixed(0)
             };
         }
         //console.log(`[Skt.io] Sending scooter data ${JSON.stringify(scooter)}`);
