@@ -56,7 +56,6 @@ export default {
         scooterId.value = id;
         showPopup.value = true;
     };
-
     return {
       showPopup,
       showTripViewList,
@@ -65,7 +64,7 @@ export default {
   },
   data() {
     return {
-      socket: null,
+      socket:  io('http://localhost:3000'),
       localScooterData: {},
       tripData: {
         totalDistance: '',
@@ -102,7 +101,7 @@ export default {
   mounted() {
     //window.addEventListener('storage', this.updateUserLogged);
 
-    this.socket = io('http://localhost:3000');
+
 
     // Listen for real-time updates
     this.socket.on('updateScooterData', (updatedData) => {

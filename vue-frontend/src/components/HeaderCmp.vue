@@ -16,7 +16,8 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import TripViewList from './TripViewListComponent.vue';
-
+import { mapActions } from "vuex";
+import { useStore } from 'vuex';
 export default {
   name: 'HeaderComponent',
   components: {
@@ -25,7 +26,7 @@ export default {
   setup() {
     const router = useRouter();
     const isAuthenticated = ref(!!localStorage.getItem('token'));
-
+    const store = useStore();
     const navigateToLogin = () => {
       router.push('/login');
     };
@@ -41,6 +42,7 @@ export default {
     const logout = () => {
       localStorage.removeItem('token');
       isAuthenticated.value = false;
+      store.dispatch('clearUserData')
     };
 
     const showPopup = ref(false);
@@ -56,6 +58,9 @@ export default {
       showPopup,
       showTripViewList
     };
+  },
+  methods: {
+  ...mapActions(['fetchUserData', 'clearUserData']),
   },
   watch: {
     '$route'() {

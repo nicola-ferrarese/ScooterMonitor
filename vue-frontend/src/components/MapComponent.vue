@@ -1,5 +1,5 @@
 <template>
-  <div id="map" ></div>
+  <div id="map"></div>
   <button v-if="showBottomBar" class="back-button" @click="hideBottomBar">Back</button>
   <BottomBar
       v-if="showBottomBar"
@@ -14,134 +14,57 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import io from 'socket.io-client';
 import "l.movemarker";
-import BottomBar from './BottomBar.vue'; // Import the BottomBar component
-//import { useRoute } from 'vue-router';
-
-var greenIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
-var redIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
-var violetIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-violet.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
-var orangeIcon = new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
+import BottomBar from './BottomBar.vue';
+import { redIcon, greenIcon, violetIcon, orangeIcon } from '../assets/icons.js';
+import { mapActions, mapGetters, mapState } from 'vuex';
 
 const scooterMap = new Map();
 const socket = io('http://localhost:3000');
 
-const setProperIcons = () => {
-  setUserScooter();
-  scooterMap.forEach(markerState => {
-    const marker = markerState.marker;
-    let icon = markerState.inUse ? redIcon : greenIcon;
-    if (markerState.belongsToUser) {
-      console.log('Setting orange icon');
-      icon = orangeIcon;
-    }
-    icon = markerState.clicked ? violetIcon : icon;
-    marker.getMarker().setIcon(icon);
-  });
-
-}
-
-const setUserScooter = () => {
-
-  //const scooterId = route
-  socket.emit('getData', localStorage.getItem('token'), (response) => {
-    console.log('User data response:', response)
-    if (response.success) {
-      console.log('User data:', response.data);
-      if (response.data) {
-        let id =  response.data.scooter_id;
-        const markerState = scooterMap.get(id);
-        console.log('User scooter:', markerState);
-        if (markerState) {
-          scooterMap.set(response.data.scooter_id, {
-            ...markerState,
-            belongsToUser: true
-          });
-
-        }
-      }
-    }
-    else {
-      console.log('User data error:', response.message);
-      scooterMap.forEach(scooter => {
-        scooter.belongsToUser = false;
-      });
-    }
-  });
-
-}
-
 export default {
   name: 'MapComponent',
   components: {
-    BottomBar
+    BottomBar,
   },
   data() {
     return {
       map: null,
-      markers: {},
       showBottomBar: false,
       selectedScooter: {},
-      bottomBarKey: 0
+      bottomBarKey: 0,
     };
+  },
+  computed: {
+    ...mapState(['token', 'socket', 'scooterId']),
+    ...mapGetters(['tripId', 'isRiding', 'getToken']),
   },
   watch: {
     showBottomBar(newValue) {
       if (newValue) {
         this.bottomBarKey++; // Increment the key to force a reload of the BottomBar component
       }
-    }
+    },
   },
   mounted() {
     this.initMap();
     this.addListeners();
     this.initSocket();
+    if (this.token) {
+      this.fetchUserData(this.token);
+    }
   },
   methods: {
+    ...mapActions(['fetchUserData', 'updateTripId']),
     initMap() {
       this.map = L.map('map').setView([44.14, 12.23], 13);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
+        attribution: '© OpenStreetMap contributors',
       }).addTo(this.map);
     },
     initSocket() {
-
-      console.log('Connected to socket server.');
       socket.on('positionUpdate', this.updateScooterPosition);
       socket.on('tripUpdate', this.updateScooterTrip);
-      socket.on('allScooters', this.updateAllScooters );
-      // Request all scooters from the server
+      socket.on('allScooters', this.updateAllScooters);
       socket.emit('requestAllScooters');
     },
     addListeners() {
@@ -149,14 +72,13 @@ export default {
         scooterMap.forEach(instance => instance.clicked = false);
         scooterMap.forEach(instance => instance.marker.getMarker().activeFollowMarker(false));
         this.showBottomBar = false;
-        //this.$router.push('/header');
-        setProperIcons();
+        this.setProperIcons();
       });
       this.map.on('click', () => {
-        setProperIcons();
+        this.setProperIcons();
       });
       this.map.on('change', () => {
-        setProperIcons();
+        this.setProperIcons();
       });
     },
     createMarker(id, lat, lon) {
@@ -170,85 +92,66 @@ export default {
         if (markerState) {
           scooterMap.forEach(markerState => markerState.clicked = false);
           markerState.clicked = !markerState.clicked;
-          setProperIcons();
-          marker.getMarker().activeFollowMarker(true)
-          // TODO retrieve the path and print it on map
+          this.setProperIcons();
+          marker.getMarker().activeFollowMarker(true);
           this.showBottomBar = true;
           this.selectedScooter = {
             id: id,
             lat: lat,
             lon: lon,
-            inUse: markerState.inUse
+            inUse: markerState.inUse,
           };
         }
       });
-      marker.hidePolylines(true)
+      marker.hidePolylines(true);
 
       scooterMap.set(id, {
         marker: marker,
         inUse: false,
         clicked: false,
-        belongsToUser: false
+        belongsToUser: false,
       });
 
       return scooterMap.get(id);
     },
     updateScooterPosition(data) {
-      console.log('Received position data:', data);
-
       let markerState = scooterMap.get(data.id);
-      let scooter = {id : data.id, lat : data.location.latitude, lon : data.location.longitude, inUse : data.inUse};
-
       if (!markerState) {
-        markerState = this.createMarker(scooter.id, scooter.lat, scooter.lon);
-        //console.log('Created new marker:', markerState);
+        markerState = this.createMarker(data.id, data.location.latitude, data.location.longitude);
         scooterMap.set(data.id, markerState);
       }
-
-      // Update position
-      console.log('Moving marker:', markerState);
-      markerState.marker.addMoreLine([scooter.lat, scooter.lon], {
+      markerState.marker.addMoreLine([data.location.latitude, data.location.longitude], {
         animate: true,
         duration: 3000,
       });
       if (data.inUse) {
         markerState.inUse = data.inUse;
       }
-
-
-      setProperIcons();
+      this.setProperIcons();
     },
     updateScooterTrip(data) {
-      console.log('Received trip data:', data);
-
       if (!data.id || !data.event) {
         return;
       }
 
       let markerState = scooterMap.get(data.id);
       if (!markerState) {
-        // create a new marker if the trip update arrives before the position update
         markerState = this.createMarker(data.id, data.start.lat, data.start.lon);
       }
-
 
       if (data.event === 'update' || data.event === 'start') {
         markerState.inUse = true;
       } else if (data.event === 'end') {
-        console.log('Trip ended:', data);
         markerState.inUse = false;
         markerState.belongsToUser = false;
       }
 
-      setProperIcons();
+      this.setProperIcons();
     },
     updateAllScooters(data) {
-      console.log('Received all scooters data:', data);
-
       if (!data) {
         return;
       }
-
       data.forEach(scooter => {
         this.updateScooterPosition(scooter);
       });
@@ -256,11 +159,37 @@ export default {
     hideBottomBar() {
       this.showBottomBar = false;
       this.selectedScooter = null;
-    }
-  }
+    },
+    setProperIcons() {
+      this.setUserScooter();
+      scooterMap.forEach(markerState => {
+        const marker = markerState.marker;
+        let icon = markerState.inUse ? redIcon : greenIcon;
+        if (markerState.belongsToUser) {
+          icon = orangeIcon;
+        }
+        icon = markerState.clicked ? violetIcon : icon;
+        marker.getMarker().setIcon(icon);
+      });
+    },
+    setUserScooter() {
+      if (!this.scooterId) {
+        console.log('No scooter ID provided.');
+        console.log('token:', this.getToken);
+        if (this.token) {
+          this.fetchUserData(this.token);
+        }
+      }
+      console.log(this.scooterId);
+      if (this.scooterId) {
+        const markerState = scooterMap.get(this.scooterId);
+        if (markerState) {
+          markerState.belongsToUser = true;
+        }
+      }
+    },
+  },
 };
-
-
 </script>
 
 <style scoped>
