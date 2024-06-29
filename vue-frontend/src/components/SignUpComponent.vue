@@ -12,8 +12,9 @@
       </div>
       <button class="toggle-button" type="submit">Sign Up</button>
     </form>
+    <p v-if="message" class="message fade-out">{{ message }}</p>
   </div>
-  <p v-if="message" class="message fade-out">{{ message }}</p>
+
 
 </template>
 
@@ -21,6 +22,7 @@
 import {ref, computed, watch} from 'vue';
 import { io } from 'socket.io-client';
 import { useStore } from 'vuex';
+import { useRouter } from 'vue-router';
 
 export default {
   name: 'SignUpComponent',
@@ -30,6 +32,7 @@ export default {
     const message = ref('');
     const showForm = ref(true);
     const store = useStore();
+    const router = useRouter();
 
     const signUp = () => {
       console.log('signUp');
@@ -39,11 +42,11 @@ export default {
         message.value = response.message;
         console.log('response:', response);
         if (response.success) {
-          showForm.value = false;
+          message.value = 'User registered successfully';
+          setTimeout(() => {
+            router.push('/')
+          }, 5000);
         }
-        setTimeout(() => {
-          message.value = '';
-        }, 10000); // Clear the message after 10 seconds
       });
     };
     const isDarkMode = computed(() => store.getters.darkMode); // make isDarkMode a computed property
@@ -75,17 +78,13 @@ export default {
 
 .fade-out {
   animation-name: fadeout;
-  animation-duration: 10s;
+  animation-duration: 3s;
   animation-fill-mode: forwards;
 }
 
 .message {
-  position: absolute;
-  z-index: 3;
-  /* Adjust the top and left properties as needed to position the message */
-  top: 50px;
-  left: 50px;
-  background-color: #f8d7da;
+  transition: all 0.3s ease; /* Add a transition */
+  text-align: center; /* Center the text */
 }
 
 .close-error {

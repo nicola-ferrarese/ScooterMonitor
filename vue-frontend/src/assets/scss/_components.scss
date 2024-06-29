@@ -94,7 +94,7 @@
   border-radius: 10px; /* Adjust as needed */
   padding: 20px; /* Add some padding */
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Add a subtle shadow */
-
+  transition: width 0.3s ease, height 0.3s ease;
 }
 
 .light-mode.login, .light-mode.form-popup {
