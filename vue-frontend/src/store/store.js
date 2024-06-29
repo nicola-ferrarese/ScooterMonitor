@@ -10,6 +10,7 @@ const store = createStore({
         isRiding: false,
         socket: socket,
         scooterId: null,
+        darkMode: false,
     },
     mutations: {
         setUser(state, user) {
@@ -30,11 +31,19 @@ const store = createStore({
             state.token = null;
             state.tripId = null;
             state.isRiding = false;
+            state.scooterId = null;
         },
         setTripId(state, tripId) {
             state.tripId = tripId;
             state.isRiding = !!tripId;
+            if(!tripId) {
+                state.scooterId = null;
+            }
+            console.log('Setting tripId: ', tripId);
         },
+        darkMode(state) {
+            state.darkMode = !state.darkMode;
+        }
     },
     actions: {
         setToken({ commit }, data) {
@@ -42,11 +51,10 @@ const store = createStore({
             commit('setToken', data);
         },
         fetchUserData({ commit }, token) {
-            // Replace with actual API call
+            console.log('Fetching user data');
             if (!this.socket) {
                 this.socket = io('http://localhost:3000');
             }
-            console.log('Fetching user data');
             this.socket.emit('getData', token, (response) => {
                 if (response.success) {
                     console.log('User data: ', response.data);
@@ -62,6 +70,10 @@ const store = createStore({
                 }
             });
         },
+        darkMode({ commit }) {
+            console.log('Dark mode ' + store.state.darkMode);
+            commit('darkMode');
+        },
         updateTripId({ commit }, tripId) {
             commit('setTripId', tripId);
         },
@@ -75,6 +87,8 @@ const store = createStore({
         tripId: state => state.tripId,
         isRiding: state => state.isRiding,
         token: state => state.token,
+        scooterId: state => state.scooterId,
+        darkMode: state => state.darkMode,
     },
 });
 
