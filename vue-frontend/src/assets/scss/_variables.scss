@@ -1,0 +1,21 @@
+// _variables.scss
+// Light theme
+$light-primary-color: #aeaeae;
+$light-secondary-color: #f4faff;
+$light-button-background: #007bff;
+$light-button-color: #ffffff;
+$light-button-text: "Light Mode";
+
+// Dark theme
+$dark-primary-color: #333;
+$dark-secondary-color: #f4faff;
+$dark-button-background: #444444;
+$dark-button-color: #ffffff;
+$dark-button-text: "Dark Mode";
+
+// By default, use light theme variables
+$primary-color: $light-primary-color;
+$secondary-color: $light-secondary-color;
+$button-background: $light-button-background;
+$button-color: $light-button-color;
+$button-text: $light-button-text;

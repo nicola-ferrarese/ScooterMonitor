@@ -1,0 +1,109 @@
+// _box.scss
+@import './variables';
+@import './mixins';
+.logo {
+  font-size: 1.5em;
+  background-color: $dark-primary-color;
+  color: $dark-secondary-color;
+  padding: 10px 10px;
+}
+
+.dark-mode.logo {
+  background-color: $dark-primary-color;
+  color: $dark-secondary-color;
+}
+.light-mode.logo {
+  background-color: $light-primary-color;
+  color: $light-secondary-color;
+}
+
+.header {
+  padding: 10px 0;
+}
+
+.dark-mode.header {
+  background-color: $dark-primary-color;
+  color: $dark-button-text;
+}
+
+.light-mode.header {
+  background-color: $light-primary-color;
+  color: $light-button-text;
+}
+
+.light-mode.logo {
+  background-color: $light-primary-color;
+  color: #333;
+}
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.box {
+  padding: 20px;
+
+  border: 1px solid $secondary-color;
+  border-radius: 10px;
+  background-color: lighten($primary-color, 20%);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  @include responsive-padding;
+
+  &--centered {
+    @include center-content;
+  }
+}
+
+.toggle-button{
+    padding: 10px 20px;
+    border: none;
+    float: right;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+  }
+
+
+
+.dark-mode .toggle-button {
+  background-color: $dark-button-background;
+  color: $dark-secondary-color;
+
+  &:hover {
+    background-color: lighten($dark-button-background, 10%);
+  }
+}
+
+.light-mode .toggle-button {
+  background-color: $light-button-background;
+  color: $light-secondary-color;
+
+  &:hover {
+    background-color: darken($light-button-background, 10%);
+  }
+  }
+
+
+.login, .form-popup{
+  position: fixed; /* Position the login form relative to the viewport */
+  top: 50%; /* Center the form vertically */
+  left: 50%; /* Center the form horizontally */
+  transform: translate(-50%, -50%); /* Adjust the position so the center of the form is at the center of the viewport */
+  z-index: 9999; /* Make sure the form appears above all other elements */
+  border-radius: 10px; /* Adjust as needed */
+  padding: 20px; /* Add some padding */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Add a subtle shadow */
+
+}
+
+.light-mode.login, .light-mode.form-popup {
+  background-color: $light-primary-color;
+    color: #333;
+}
+
+.dark-mode.login, .dark-mode.form-popup {
+  background-color: $dark-primary-color;
+  color: $dark-secondary-color;
+}
+

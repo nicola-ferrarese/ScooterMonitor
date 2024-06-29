@@ -1,0 +1,13 @@
+@import 'variables';
+@import 'mixins';
+@import 'components';
+body {
+  background-color: $primary-color;
+  color: $secondary-color;
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+.centered {
+  @include center-content;
+}

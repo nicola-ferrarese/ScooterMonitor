@@ -1,0 +1,14 @@
+@mixin center-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+@mixin responsive-padding {
+  padding: 20px;
+
+  @media (max-width: 600px) {
+    padding: 10px;
+  }
+}
