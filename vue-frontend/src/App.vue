@@ -1,6 +1,9 @@
 <template>
   <div id="app">
-    <header class="logo" @click="navigateToMap">Scooter Monitoring</header>
+    <header  :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }" class="logo" >Scooter Monitoring
+        <button class=" toggle-button" @click="toggleTheme">{{ buttonText }}</button>
+
+    </header>
     <HeaderCmp />
     <div class="main-content">
       <router-view />
@@ -13,44 +16,57 @@
 
 import MapComponent from "@/components/MapComponent.vue";
 import HeaderCmp from "@/components/HeaderCmp.vue";
-
+import {useStore}   from "vuex";
 
 export default {
   name: 'App',
   components: {
     HeaderCmp,
-    MapComponent
+    MapComponent,
+  },
+  setup() {
+    const store = useStore();
+    store.dispatch('fetchUserData', localStorage.getItem('token'));
+    //set the theme in the store
+    return {
+      store
+    };
+    },
+  data() {
+    return {
+      isDarkMode: false,
+    };
+  },
+  computed: {
+    buttonText() {
+      return this.isDarkMode ? 'Light Mode' : 'Dark Mode';
+    }
+  },
+  methods: {
+    toggleTheme() {
+      this.isDarkMode = !this.isDarkMode;
+      this.store.dispatch('darkMode', this.isDarkMode);
+      document.body.style.backgroundColor = this.isDarkMode
+          ? this.$scss.darkPrimaryColor
+          : this.$scss.lightPrimaryColor;
+      document.body.style.color = this.isDarkMode
+          ? this.$scss.darkSecondaryColor
+          : this.$scss.lightSecondaryColor;
+    }
   }
 }
 </script>
 
 
 
-<style>
-body {
-  margin: 0;
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: #f0f0f0;
-}
-#app {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-}
+<style lang="scss">
+@import '@/assets/scss/globals';
+
 .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
 }
-.header {
 
-}
-.logo {
-  font-size: 1.5em;
-  background-color: #333;
-  color: white;
-  padding: 10px 10px;
-}
+
 </style>

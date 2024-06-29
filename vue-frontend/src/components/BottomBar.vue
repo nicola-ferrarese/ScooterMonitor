@@ -1,5 +1,5 @@
 <template>
-  <div class="bottom-bar" v-if="visible">
+  <div class="box--centered" v-if="visible">
     <div v-if="loading" class="loading">Loading...</div>
     <div v-else class="scooter-info">
       <p>ID: {{ localScooterData.id }}</p>
@@ -104,7 +104,6 @@ export default {
     //window.addEventListener('storage', this.updateUserLogged);
 
 
-
     // Listen for real-time updates
     this.socket.on('updateScooterData', (updatedData) => {
       if (updatedData.id === this.localScooterData.id) {
@@ -117,6 +116,12 @@ export default {
       }
     });
     this.loading = false;
+    this.socket.on('tripUpdate', (tripData) => {
+      if (tripData.event === 'end') {
+        this.localScooterData.inUse = false;
+        this.tripData = {};
+      }
+    });
   },
   methods: {
     updateUserLogged() {
@@ -200,7 +205,8 @@ export default {
 };
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+@import '@/assets/scss/components';
 .bottom-bar {
   position: absolute;
   bottom: 0;

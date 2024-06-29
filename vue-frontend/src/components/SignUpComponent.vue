@@ -1,5 +1,5 @@
 <template>
-  <div v-if="showForm" class="signup">
+  <div :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }" v-if="showForm" class="form-popup">
     <h2 >Sign Up</h2>
     <form  @submit.prevent="signUp">
       <div>
@@ -10,7 +10,7 @@
         <label for="password">Password:</label>
         <input type="password" v-model="password" required />
       </div>
-      <button type="submit">Sign Up</button>
+      <button class="toggle-button" type="submit">Sign Up</button>
     </form>
   </div>
   <p v-if="message" class="message fade-out">{{ message }}</p>
@@ -18,8 +18,9 @@
 </template>
 
 <script>
-import { ref } from 'vue';
+import {ref, computed, watch} from 'vue';
 import { io } from 'socket.io-client';
+import { useStore } from 'vuex';
 
 export default {
   name: 'SignUpComponent',
@@ -28,12 +29,15 @@ export default {
     const password = ref('');
     const message = ref('');
     const showForm = ref(true);
+    const store = useStore();
 
     const signUp = () => {
       console.log('signUp');
       const socket = io('http://localhost:3000');
+      console.log('username:', username.value);
       socket.emit('signUp', { username: username.value, password: password.value }, (response) => {
         message.value = response.message;
+        console.log('response:', response);
         if (response.success) {
           showForm.value = false;
         }
@@ -42,10 +46,14 @@ export default {
         }, 10000); // Clear the message after 10 seconds
       });
     };
-
+    const isDarkMode = computed(() => store.getters.darkMode); // make isDarkMode a computed property
+    watch(isDarkMode, (newVal) => {
+      console.log('Dark mode changed to:', newVal);
+    });
     return {
-      username,
+      isDarkMode,
       password,
+      username,
       message,
       signUp,
       showForm
@@ -80,23 +88,6 @@ export default {
   background-color: #f8d7da;
 }
 
-
-.signup {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 9999;
-  background-color: #f8d7da;
-  color: #721c24;
-  padding: 20px;
-  border: 1px solid #f5c6cb;
-  border-radius: 5px;
-  text-align: center;
-  width: 80%;
-  max-width: 500px;
-}
-
 .close-error {
   position: absolute;
   top: 10px;
@@ -106,5 +97,34 @@ export default {
   background-color: #bf2222;
   border-radius: 50%;
   cursor: pointer;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch; /* This will make the input fields take up the full width of the form */
+}
+
+button {
+  align-self: center; /* This will center the button horizontally */
+  margin-top: 20px; /* Add some space above the button */
+}
+
+form div {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px; /* Add some space below each input field */
+}
+
+form div label {
+  flex: 1;
+  text-align: right;
+  margin-right: 10px; /* Add some space to the right of the label */
+}
+
+form div input {
+  flex: 2;
 }
 </style>

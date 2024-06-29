@@ -8,6 +8,7 @@
         <select v-model="sortOption" @change="sortTrips">
           <option value="totalDistance">Total Distance</option>
           <option value="date">Date</option>
+          <option value="duration">Duration</option>
         </select>
         <button @click="toggleOrder">{{ sortOrder === 'asc' ? 'Ascending' : 'Descending' }}</button>
       </div>
@@ -16,7 +17,7 @@
           <p>Scooter ID: {{ trip.scooterId }}</p>
           <p>Total Distance: {{ trip.totalDistance }}</p>
           <p>Cost: {{ trip.totalCost }}</p>
-          <p>Duration: {{ trip.duration }} minutes</p>
+          <p>Duration: {{ (trip.duration / 1000 / 60).toFixed(0) }} minutes</p>
           <p>
             Date: {{ new Date(trip.end).toLocaleDateString() }}
           </p>

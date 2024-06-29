@@ -1,22 +1,21 @@
 <template>
   <header class="header">
-    <div class="container">
-      <nav>
-        <button v-if="!isAuthenticated" class="btn" @click="navigateToLogin">Log In</button>
-        <button v-if="!isAuthenticated" class="btn" @click="navigateToSignUp">Sign Up</button>
-        <button v-if="isAuthenticated" class="btn" @click="logout">Log Out</button>
-        <button v-if="isAuthenticated" class="btn" @click="showTripViewList()">Stats</button>
+    <div class="container" :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }">
+        <button v-if="!isAuthenticated" class="toggle-button" @click="navigateToLogin">Log In</button>
+        <button v-if="!isAuthenticated" class="toggle-button" @click="navigateToSignUp">Sign Up</button>
+        <button v-if="isAuthenticated" class="toggle-button" @click="logout">Log Out</button>
+        <button v-if="isAuthenticated" class="toggle-button" @click="showTripViewList()">Stats</button>
         <TripViewList v-if="showPopup" :visible="showPopup" :general="showPopup" @close="showPopup = false" />
-      </nav>
+
     </div>
   </header>
 </template>
 
 <script>
-import { ref } from 'vue';
+import {computed, ref, watch} from 'vue';
 import { useRouter } from 'vue-router';
 import TripViewList from './TripViewListComponent.vue';
-import { mapActions } from "vuex";
+import { mapActions, mapGetters } from "vuex";
 import { useStore } from 'vuex';
 export default {
   name: 'HeaderComponent',
@@ -49,7 +48,14 @@ export default {
     const showTripViewList  = () => {
       showPopup.value = true;
     };
+    const isDarkMode = computed(() => store.getters.darkMode); // make isDarkMode a computed property
+
+    // watch isDarkMode for changes
+    watch(isDarkMode, (newVal) => {
+      console.log('Dark mode changed to:', newVal);
+    });
     return {
+      isDarkMode,
       isAuthenticated,
       navigateToLogin,
       navigateToSignUp,
@@ -61,26 +67,19 @@ export default {
   },
   methods: {
   ...mapActions(['fetchUserData', 'clearUserData']),
+    ...mapGetters(['darkMode'])
   },
   watch: {
     '$route'() {
       this.isAuthenticated = !!localStorage.getItem('token');
     },
-
   }
 };
 </script>
 
 <style scoped>
-.header {
-  background-color: #333;
-  color: white;
-  padding: 10px 0;
-}
-.logo {
-  font-size: 1.5em;
-  cursor: pointer;
-}
+
+
 .container {
   display: flex;
   justify-content: flex-end;
@@ -88,24 +87,9 @@ export default {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
-}
-
-nav {
-  display: flex;
   gap: 10px;
 }
-.btn {
-  background-color: #444;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: background-color 0.3s;
-}
-.btn:hover {
-  background-color: #555;
-}
+
 @media (max-width: 768px) {
   .container {
     flex-direction: column;
@@ -118,3 +102,5 @@ nav {
   }
 }
 </style>
+
+reference light-mode.btn in scss
