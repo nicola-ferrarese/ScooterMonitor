@@ -31,7 +31,6 @@ const auth = {
     signUp: async (data, callback) => {
         try {
             const {username, password} = data;
-            console.log(`[AUTH] Registering user ${data}`);
             const existingUser = await User.findOne({username});
             if (existingUser) {
                 return callback({success: false, message: 'Username already exists'});
