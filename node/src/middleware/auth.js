@@ -75,16 +75,25 @@ const auth = {
         if (!user) {
             return callback({success: false, message: 'Invalid token'});
         }
-        if (!user.currentRide) {
-            return callback({success: false, message: 'No active ride'});
+        let data = {user: user.username, tripId: user.currentRide, token: token};
+
+        if (user.currentRide === null) {
+            return callback({success: true, message: 'No active ride', data});
         }
         const tripId = user.currentRide;
         console.log(`[AUTH] Fetching data for trip ${tripId}`);
         const scooter_utilized = await Scooter.findOne({tripId: tripId});
         if (!scooter_utilized) {
-            return callback({success: false, message: 'Scooter not found'});
+            return callback({success: true, message: 'No active ride', data});
         }
-        callback({success: true, message: 'Data retrieved', data: {scooter_id: scooter_utilized.id, tripId: scooter_utilized.tripId, user: user.username}});
+        callback({success: true, message: 'Data retrieved', data: {...data, scooterId: scooter_utilized.id, tripId: scooter_utilized.tripId}});
+    },
+
+    getAllUserInfo: async (token, callback) => {
+        let user = await User.findOne({activeToken: token});
+        if (!user) {
+            return callback({success: false, message: 'Invalid token'});
+        }
     }
 }
 

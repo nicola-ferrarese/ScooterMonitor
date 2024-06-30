@@ -1,5 +1,5 @@
 <template>
-  <div id="map"></div>
+  <div id="map" @click="mapClicked"> </div>
   <button v-if="showBottomBar" class="back-button" @click="hideBottomBar">Back</button>
   <BottomBar
       v-if="showBottomBar"
@@ -30,8 +30,22 @@ export default {
   },
   setup() {
     const store = useStore();
+    if (localStorage.getItem('token')) {
+      const token = localStorage.getItem('token');
+
+
+      console.log('[Setup] setting token, ' + token);
+      store.dispatch('setToken', { token: token });
+      store.dispatch('fetchUserScooter', token);
+    }
+    const mapClicked = () => {
+      console.log('mapClicked');
+      store.commit('setMapClicked', true);
+
+    };
     return {
-      store
+      store,
+      mapClicked,
     };
   },
   data() {
@@ -45,7 +59,7 @@ export default {
   computed: {
     ...mapState(['token', 'socket', 'scooterId']),
     ...mapGetters(['tripId', 'isRiding', 'token', "isAuthenticated"]),
-    ...mapActions(['fetchUserData', 'updateTripId'])
+    ...mapActions([ 'updateTripId'])
   },
   watch: {
     showBottomBar(newValue) {
@@ -55,12 +69,11 @@ export default {
     },
   },
   mounted() {
+    console.log('mounted');
     this.initMap();
     this.addListeners();
     this.initSocket();
-    if (this.token) {
-      this.store.dispatch('fetchUserData', this.token);
-    }
+    this.setProperIcons();
   },
   methods: {
     initMap() {
@@ -83,14 +96,17 @@ export default {
         this.showBottomBar = false;
         this.setProperIcons();
         router.push('/');
+        this.mapClicked();
       });
       this.map.on('click', () => {
         this.setProperIcons();
         router.push('/');
+        this.mapClicked();
       });
       this.map.on('change', () => {
         this.setProperIcons();
         router.push('/');
+        this.mapClicked();
       });
     },
     createMarker(id, lat, lon) {
@@ -191,12 +207,16 @@ export default {
     },
     setUserScooter() {
       //use vuex store getter
+      console.log('setting user scooter')
       console.log('isAuthenticated:', this.isAuthenticated);
+      console.log('token:', this.token);
       console.log('scooterId:', this.scooterId);
       console.log('isRiding:', this.isRiding);
       if( this.isRiding && !this.scooterId && this.token){
-        console.log('updating user data')
-        this.store.dispatch('fetchUserData', this.token);
+        console.log('-------------------> Updating user data' + JSON.stringify({token: this.token,
+          scooterId: this.scooterId,
+          isRiding: this.isRiding}));
+        this.store.dispatch('fetchUserScooter', this.token);
       }
       if (!this.isAuthenticated) {
         scooterMap.forEach(markerState => {
@@ -206,6 +226,9 @@ export default {
       }
       if (!this.scooterId) {
           this.store.dispatch('updateTripId', null);
+          scooterMap.forEach(markerState => {
+            markerState.belongsToUser = false;
+          });
       }
 
       if (this.scooterId) {

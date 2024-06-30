@@ -1,5 +1,6 @@
 <template>
-  <header class="header">
+  <header @map-click="handleMapClick"  class="header" :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }">
+    hello {{username}}
     <div class="container" :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }">
         <button v-if="!isAuthenticated" class="toggle-button" @click="navigateToLogin">Log In</button>
         <button v-if="!isAuthenticated" class="toggle-button" @click="navigateToSignUp">Sign Up</button>
@@ -13,12 +14,24 @@
 
 <script>
 import {computed, ref, watch} from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter} from 'vue-router';
 import TripViewList from './TripViewListComponent.vue';
 import { mapActions, mapGetters } from "vuex";
 import { useStore } from 'vuex';
+import {usage} from "browserslist";
 export default {
   name: 'HeaderComponent',
+  computed: {
+    mapClicked() {
+      return this.$store.state.mapClicked;
+    },
+    username() {
+      return this.$store.getters.user;
+    },
+    usage() {
+      return usage
+    }
+  },
   components: {
     TripViewList
   },
@@ -66,10 +79,22 @@ export default {
     };
   },
   methods: {
-  ...mapActions(['fetchUserData', 'clearUserData']),
-    ...mapGetters(['darkMode'])
+    handleMapClick() {
+      console.log('HAND');
+      this.showPopup = false;
+    },
+    ...mapActions(['fetchUserData', 'clearUserData']),
+    ...mapGetters(['darkMode']),
+
+
   },
   watch: {
+    mapClicked(newVal, oldVal) {
+      if (newVal !== oldVal && newVal === true) {
+        this.handleMapClick();
+        this.$store.commit('setMapClicked', false); // reset the state
+      }
+    },
     '$route'() {
       this.isAuthenticated = !!localStorage.getItem('token');
     },
@@ -87,7 +112,6 @@ export default {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
-  gap: 10px;
 }
 
 @media (max-width: 768px) {
@@ -102,5 +126,3 @@ export default {
   }
 }
 </style>
-
-reference light-mode.btn in scss

@@ -41,7 +41,8 @@ export default {
             console.log('store is null');
             store = useStore();
           }
-          store.dispatch('setToken', { token: response.token });
+          //store.dispatch('setToken', { token: response.token });
+          store.dispatch('fetchUserScooter', response.token);
           //store.dispatch('fetchUserData', response.token);
           router.push('/');
         } else {

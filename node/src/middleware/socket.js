@@ -4,10 +4,10 @@ const Scooter = require('../models/scooterModel'); // Ensure you have the correc
 const {updateFrontEndScooters, fetchScooterDataDB, updateFrontEndScooterPosition} = require('./scooterService');
 let io = null;
 const {evaluateStart, evaluateStop, getTripView} = require('./TripManager');
-
 module.exports = {
     initSocket: (server) => {
         io = socketIO(server, {
+            debug: true,
             cors: {
                 origin: "*", // replace with your frontend server address
                 methods: ["GET", "POST"],

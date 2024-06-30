@@ -9,11 +9,13 @@ const http = require('http');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const server = http.createServer(app);
+const cors = require('cors');
 
 const io = initSocket(server);
 
 
 app.use(express.json());
+app.use(cors());
 // app.use('/users', userRoutes);
 app.use('/api/scooter', scooterRoutes);
 

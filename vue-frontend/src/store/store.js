@@ -6,6 +6,8 @@ const store = createStore({
     state: {
         username: null,
         token: localStorage.getItem('token') || null,
+        mapClicked: false,
+        isAuthenticated: !!localStorage.getItem('token'),
         tripId: null,
         isRiding: false,
         socket: socket,
@@ -20,6 +22,9 @@ const store = createStore({
             state.tripId = user.tripId;
             state.isRiding = user.isRiding;
             state.scooterId = user.scooterId;
+        },
+        setMapClicked(state, value) {
+            state.mapClicked = value;
         },
         setToken(state, data) {
             console.log('Setting token: ', data);
@@ -50,23 +55,28 @@ const store = createStore({
             console.log('Setting token: ', data);
             commit('setToken', data);
         },
-        fetchUserData({ commit }, token) {
-            console.log('Fetching user data');
+        fetchUserScooter({ commit }, token) {
+            console.log('Fetching user data ' + token);
             if (!this.socket) {
                 this.socket = io('http://localhost:3000');
             }
             this.socket.emit('getData', token, (response) => {
+                console.log('Response data: ', response.data);
                 if (response.success) {
-                    console.log('User data: ', response.data);
-                    commit('setUser', {
+                    let user = {
                         username: response.data.user,
                         token: token,
-                        tripId: response.data.scooter_id,
-                        isRiding: !!response.data.scooter_id,
-                        scooterId: response.data.scooter_id,
-                    });
-                } else {
-                    commit('clearUser');
+                        tripId: response.data.tripId,
+                        isRiding: !!response.data.tripId,
+                        scooterId: response.data.scooterId,
+                    };
+                    commit('setUser', user);
+                }
+                if (response.success && response.data.tripId) {
+                    commit('setTripId', response.data.tripId);
+                }
+                else {
+                    console.log('-->No active ride? ' +   response.message);
                 }
             });
         },

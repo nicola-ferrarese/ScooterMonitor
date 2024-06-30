@@ -26,7 +26,7 @@ export default {
   },
   setup() {
     const store = useStore();
-    store.dispatch('fetchUserData', localStorage.getItem('token'));
+    //store.dispatch('fetchUserData', localStorage.getItem('token'));
     //set the theme in the store
     return {
       store

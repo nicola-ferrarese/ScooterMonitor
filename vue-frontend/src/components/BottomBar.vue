@@ -1,7 +1,7 @@
 <template>
-  <div class="box--centered" v-if="visible">
-    <div v-if="loading" class="loading">Loading...</div>
-    <div v-else class="scooter-info">
+  <div  v-if="visible">
+    <div v-if="loading" class="loading" >Loading...</div>
+    <div v-else :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }" class="popup">
       <p>ID: {{ localScooterData.id }}</p>
       <div v-if="localScooterData.inUse">
         <p>Trip Distance: {{ tripData.totalDistance }}</p>
@@ -10,17 +10,16 @@
         <div v-if="showLoginPrompt">
           Please log in to unlock a scooter.
         </div>
-        <div v-else>
-          <button v-if="userLogged" @click="stopRide">Stop Ride</button>
+        <div v-else :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }">
+          <button v-if="userLogged" class="toggle-button" @click="stopRide">Stop Ride</button>
         </div>
       </div>
-      <div v-else>
-        <button v-if="userLogged" @click="unlockScooter">Unlock Scooter</button>
+      <div v-if="!localScooterData.inUse" :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }">
+        <button v-if="userLogged" class="toggle-button" @click="unlockScooter">Unlock Scooter</button>
       </div>
-    </div>
-    <div>
-      <button @click="showTripViewList(localScooterData.id)">Show Trip Views</button>
-      <TripViewList v-if="showPopup" :visible="showPopup" :scooterId="localScooterData.id" @close="showPopup = false" />
+
+      <button  class="toggle-button"  @click="showTripViewList(localScooterData.id)">Show Trip Views</button>
+      <TripViewList id="detailView"   v-if="showPopup" :visible="showPopup" :scooterId="localScooterData.id" @close="showPopup = false" />
     </div>
   </div>
 
@@ -37,8 +36,9 @@
 
 <script>
 import io from 'socket.io-client';
-import { ref } from 'vue';
+import {ref, computed, watch} from 'vue';
 import TripViewList from './TripViewListComponent.vue';
+import { useStore } from "vuex";
 
 export default {
   name: 'BottomBar',
@@ -52,12 +52,19 @@ export default {
   setup() {
     const showPopup = ref(false);
     const scooterId = ref(null);
+    const store = useStore();
 
     const showTripViewList  = (id) => {
         scooterId.value = id;
         showPopup.value = true;
     };
+    const isDarkMode = computed(() => store.getters.darkMode); // make isDarkMode a computed property
+    watch(isDarkMode, (newVal) => {
+      console.log('Dark mode changed to:', newVal);
+    });
     return {
+      store,
+      isDarkMode,
       showPopup,
       showTripViewList,
       scooterId
@@ -75,7 +82,6 @@ export default {
       loading: true,
       errorMessage: '',
       showLoginPrompt: false,
-      userLogged: !!localStorage.getItem('token')
     };
   },
   beforeUnmount() {
@@ -99,6 +105,25 @@ export default {
     },
 
 
+  },
+  computed: {
+
+    userLogged() {
+      //const isAuthenticated = this.store.getters.isAuthenticated;
+      //const isNotRiding = !store.getters.isRiding;
+      const scooterId = this.store.getters.scooterId;
+      console.log("localScooterData.id", this.localScooterData);
+      if (!this.store.getters.isAuthenticated) {
+        return false;
+      }
+      if (this.localScooterData.inUse === null) {
+        return true;
+      }
+      if (scooterId === null) {
+        return true;
+      }
+      return (scooterId === this.localScooterData.id);
+    }
   },
   mounted() {
     //window.addEventListener('storage', this.updateUserLogged);
@@ -125,7 +150,7 @@ export default {
   },
   methods: {
     updateUserLogged() {
-      console.log('User logged:', !!localStorage.getItem('token'));
+
       this.userLogged = !!localStorage.getItem('token');
     },
     closeErrorMessage() {
@@ -145,6 +170,7 @@ export default {
             console.log("Scooter data fetched.", response);
             this.tripData = response.trip || {};
             this.localScooterData = response || {};
+            console.log("Local scooter data:", this.localScooterData);
             this.loading = false;
           }
         });
@@ -162,10 +188,10 @@ export default {
         token: localStorage.getItem('token')
       }, (response) => {
         if (response.error) {
+          console.error("Error starting ride:", response.error);
           if (response.status !== null) {
             if (response.status === "Already riding") {
               this.errorMessage = 'You are already riding a scooter. Please stop the current ride first.';
-              this.$router.push('/map');
             } else {
               this.errorMessage = response.error;
             }
@@ -173,7 +199,6 @@ export default {
           else {
             console.error("Error starting ride:", response.error);
             localStorage.removeItem('token');
-            this.$router.push('/map');
             this.errorMessage = 'Session expired. Please log in again.';
           }
           // display error message
@@ -181,7 +206,7 @@ export default {
 
         } else {
           console.log("Ride started successfully.", response);
-          // Update local state as needed
+          this.store.dispatch('fetchUserScooter', localStorage.getItem('token'));
         }
       });
     }
@@ -207,6 +232,9 @@ export default {
 
 <style lang="scss" scoped>
 @import '@/assets/scss/components';
+
+
+/*
 .bottom-bar {
   position: absolute;
   bottom: 0;
@@ -265,5 +293,6 @@ export default {
 
 button {
   margin-top: 1rem;
-}
+}*/
+
 </style>

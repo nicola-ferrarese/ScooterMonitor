@@ -1,6 +1,6 @@
 <template>
 
-    <div v-if="visible" class="popup" id="popup" :class="{ 'popup-general': general }">
+    <div v-if="visible" class="popup" id="popup" :class="{ 'popup-general': general, 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }">
     <div class="popup-content">
       <h2>Trip Views</h2>
       <div class="controls">
@@ -10,7 +10,7 @@
           <option value="date">Date</option>
           <option value="duration">Duration</option>
         </select>
-        <button @click="toggleOrder">{{ sortOrder === 'asc' ? 'Ascending' : 'Descending' }}</button>
+        <button  :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }" class="toggle-button" @click="toggleOrder">{{ sortOrder === 'asc' ? 'Ascending' : 'Descending' }}</button>
       </div>
       <div class="trip-list">
         <div v-for="trip in sortedTrips" :key="trip.tripId" class="trip-item">
@@ -25,7 +25,7 @@
             End Time: {{ new Date(trip.end).toLocaleTimeString() }}</p>
         </div>
       </div>
-      <button @click="closePopup">Close</button>
+      <button @click="closePopup" :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }" class="toggle-button">Close</button>
     </div>
   </div>
 </template>
@@ -33,6 +33,7 @@
 <script>
 import { ref, computed, watch } from 'vue';
 import { io } from 'socket.io-client';
+import { useStore } from 'vuex';
 
 export default {
   name: 'TripViewList',
@@ -47,6 +48,7 @@ export default {
     const trips = ref([]);
     const sortOption = ref('date');
     const sortOrder = ref('desc');
+    const store = useStore();
 
     const fetchTrips = () => {
 
@@ -93,8 +95,13 @@ export default {
     const closePopup = () => {
       emit('close');
     };
+    const isDarkMode = computed(() => store.getters.darkMode); // make isDarkMode a computed property
 
+    watch(isDarkMode, (newVal) => {
+      console.log('Dark mode changed to:', newVal);
+    });
     return {
+      isDarkMode,
       trips,
       sortOption,
       sortOrder,
@@ -112,21 +119,19 @@ export default {
   top: 0;
 }
 .popup {
-  position: fixed;
-  z-index: 1;
-  top: -45vh;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  position: fixed; /* Position the login form relative to the viewport */
+  top: 50%; /* Center the form vertically */
+  left: 50%; /* Center the form horizontally */
+  transform: translate(-50%, 20%); /* Adjust the position so the center of the form is at the center of the viewport */
+  border: #007bff 1px solid;
+  z-index: 1000;
   display: flex;
   justify-content: center;
   align-items: center;
-  color: #721c24;
+
 }
 
 .popup-content {
-  background-color: #fff;
   padding: 20px;
   border-radius: 8px;
   width: 66.66vw; /* 2/3 of the viewport width */
