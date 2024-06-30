@@ -86,7 +86,8 @@ const auth = {
         if (!scooter_utilized) {
             return callback({success: true, message: 'No active ride', data});
         }
-        callback({success: true, message: 'Data retrieved', data: {...data, scooterId: scooter_utilized.id, tripId: scooter_utilized.tripId}});
+        data= {...data, scooterId: scooter_utilized.id, tripId: scooter_utilized.tripId};
+        callback({success: true, message: 'Data retrieved', data: data});
     },
 
     getAllUserInfo: async (token, callback) => {

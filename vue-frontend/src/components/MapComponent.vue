@@ -39,7 +39,6 @@ export default {
       store.dispatch('fetchUserScooter', token);
     }
     const mapClicked = () => {
-      console.log('mapClicked');
       store.commit('setMapClicked', true);
 
     };
@@ -170,13 +169,17 @@ export default {
         markerState = this.createMarker(data.id, data.start.lat, data.start.lon);
       }
 
+      // Update the tripId in the store
+      if(this.store.getters.tripId !== data.tripId){
+        this.store.dispatch('updateTripId', data.tripId);
+      }
+
+      // Update scooterMap
       if (data.event === 'update' || data.event === 'start') {
         markerState.inUse = true;
-        this.store.dispatch('updateTripId', data.tripId);
       } else if (data.event === 'end') {
         markerState.inUse = false;
         markerState.belongsToUser = false;
-        this.store.dispatch('updateTripId', null);
       }
 
       this.setProperIcons();
@@ -207,17 +210,11 @@ export default {
     },
     setUserScooter() {
       //use vuex store getter
-      console.log('setting user scooter')
-      console.log('isAuthenticated:', this.isAuthenticated);
-      console.log('token:', this.token);
-      console.log('scooterId:', this.scooterId);
-      console.log('isRiding:', this.isRiding);
-      if( this.isRiding && !this.scooterId && this.token){
-        console.log('-------------------> Updating user data' + JSON.stringify({token: this.token,
-          scooterId: this.scooterId,
-          isRiding: this.isRiding}));
-        this.store.dispatch('fetchUserScooter', this.token);
-      }
+      console.log('[frontend] setting user scooter')
+
+      this.store.dispatch('fetchUserScooter', this.token);
+
+      console.log("authenticated: " + this.isAuthenticated);
       if (!this.isAuthenticated) {
         scooterMap.forEach(markerState => {
           markerState.belongsToUser = false;
@@ -225,18 +222,24 @@ export default {
         return;
       }
       if (!this.scooterId) {
+          console.log('scooterId is null');
           this.store.dispatch('updateTripId', null);
           scooterMap.forEach(markerState => {
+            if(!markerState){
+              console.log('markerState is null');
+            }
             markerState.belongsToUser = false;
           });
       }
 
       if (this.scooterId) {
         const markerState = scooterMap.get(this.scooterId);
+
         if (markerState) {
           markerState.belongsToUser = true;
         }
       }
+
     },
   },
 };

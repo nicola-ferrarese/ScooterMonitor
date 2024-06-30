@@ -15,8 +15,8 @@
       <div class="trip-list">
         <div v-for="trip in sortedTrips" :key="trip.tripId" class="trip-item">
           <p>Scooter ID: {{ trip.scooterId }}</p>
-          <p>Total Distance: {{ trip.totalDistance }}</p>
-          <p>Cost: {{ trip.totalCost }}</p>
+          <p>Total Distance: {{ Math.round(trip.totalDistance)/1009  }} Km</p>
+          <p>Cost: {{  Math.round(trip.totalCost) }} Eur</p>
           <p>Duration: {{ (trip.duration / 1000 / 60).toFixed(0) }} minutes</p>
           <p>
             Date: {{ new Date(trip.end).toLocaleDateString() }}
@@ -67,13 +67,13 @@ export default {
 
     const sortedTrips = computed(() => {
       return trips.value.slice().sort((a, b) => {
+
         let compareA = a[sortOption.value];
         let compareB = b[sortOption.value];
-
         if (sortOption.value === 'date') {
-          compareA = new Date(compareA);
-          compareB = new Date(compareB);
-        }
+            compareA = a.end;
+            compareB = b.end;
+          }
 
         if (sortOrder.value === 'asc') {
           return compareA > compareB ? 1 : -1;

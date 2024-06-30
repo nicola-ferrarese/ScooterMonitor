@@ -80,7 +80,7 @@ export default {
   },
   methods: {
     handleMapClick() {
-      console.log('HAND');
+
       this.showPopup = false;
     },
     ...mapActions(['fetchUserData', 'clearUserData']),

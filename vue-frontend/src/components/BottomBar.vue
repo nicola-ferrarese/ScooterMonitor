@@ -3,7 +3,7 @@
     <div v-if="loading" class="loading" >Loading...</div>
     <div v-else :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }" class="popup">
       <p>ID: {{ localScooterData.id }}</p>
-      <div v-if="localScooterData.inUse">
+      <div v-if="localScooterData.inUse && belongsToUser">
         <p>Trip Distance: {{ tripData.totalDistance }}</p>
         <p>Trip Cost: {{ tripData.totalCost }}</p>
         <p>Trip Duration: {{ tripData.duration }} minutes </p>
@@ -11,12 +11,13 @@
           Please log in to unlock a scooter.
         </div>
         <div v-else :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }">
-          <button v-if="userLogged" class="toggle-button" @click="stopRide">Stop Ride</button>
+          <button v-if="userLogged && isRiding && belongsToUser" class="toggle-button" @click="stopRide">Stop Ride</button>
         </div>
       </div>
-      <div v-if="!localScooterData.inUse" :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }">
-        <button v-if="userLogged" class="toggle-button" @click="unlockScooter">Unlock Scooter</button>
-      </div>
+        {{userLogged}}
+        {{store.getters.isAuthenticated}}
+        <button v-if="userLogged && !isRiding && !localScooterData.inUse"  class="toggle-button" @click="unlockScooter">Unlock Scooter</button>
+
 
       <button  class="toggle-button"  @click="showTripViewList(localScooterData.id)">Show Trip Views</button>
       <TripViewList id="detailView"   v-if="showPopup" :visible="showPopup" :scooterId="localScooterData.id" @close="showPopup = false" />
@@ -96,7 +97,7 @@ export default {
     scooterData: {
       handler(newVal) {
         this.localScooterData = { ...newVal }; // Create a local copy of the prop
-        if (newVal && newVal.inUse) {
+        if (newVal) {
           this.fetchScooterData();
         }
       },
@@ -109,20 +110,21 @@ export default {
   computed: {
 
     userLogged() {
-      //const isAuthenticated = this.store.getters.isAuthenticated;
+      return  this.store.getters.isAuthenticated;
       //const isNotRiding = !store.getters.isRiding;
-      const scooterId = this.store.getters.scooterId;
-      console.log("localScooterData.id", this.localScooterData);
-      if (!this.store.getters.isAuthenticated) {
+    },
+    isRiding() {
+      const isRiding = this.store.getters.isRiding;
+      return isRiding;
+    },
+    belongsToUser() {
+      console.log(this.store.getters.scooterId)
+      console.log(this.localScooterData.id)
+      if (!this.store.getters.scooterId) {
         return false;
       }
-      if (this.localScooterData.inUse === null) {
-        return true;
-      }
-      if (scooterId === null) {
-        return true;
-      }
-      return (scooterId === this.localScooterData.id);
+      return this.store.getters.scooterId === this.localScooterData.id;
+
     }
   },
   mounted() {
@@ -170,8 +172,13 @@ export default {
             console.log("Scooter data fetched.", response);
             this.tripData = response.trip || {};
             this.localScooterData = response || {};
+            if(this.localScooterData){
+              this.localScooterData = { ...this.localScooterData,
+                                        belongsToUser: this.belongsToUser, }
+            }
             console.log("Local scooter data:", this.localScooterData);
             this.loading = false;
+
           }
         });
       }
