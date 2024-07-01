@@ -23,6 +23,10 @@ const store = createStore({
             state.isRiding = user.isRiding;
             state.scooterId = user.scooterId;
         },
+        setScooterId(state, scooterId) {
+            console.log('Setting scooterId: ', scooterId);
+            state.scooterId = scooterId;
+        },
         setMapClicked(state, value) {
             state.mapClicked = value;
         },
@@ -44,6 +48,13 @@ const store = createStore({
             if(!tripId) {
                 state.scooterId = null;
             }
+            socket.emit('getScooterId', {tripId: state.tripId, token: state.token} , (response) => {
+                console.log('[TRIP ID]ScooterId: ', response);
+                if (response){
+                    state.scooterId = response.scooterId;
+                }
+
+            });
             console.log('Setting tripId: ', tripId);
         },
         darkMode(state) {
@@ -62,15 +73,20 @@ const store = createStore({
             }
             this.socket.emit('getData', token, (response) => {
                 console.log('Response data: ', response.data);
+                console.log('Response message: ', response.message);
+                console.log('Response success: ', response.success);
+                console.log('isRiding: ', !!response.data.tripId);
                 if (response.success) {
                     let user = {
                         username: response.data.user,
                         token: token,
                         tripId: response.data.tripId,
                         isRiding: !!response.data.tripId,
-                        scooterId: response.data.scooterId,
                     };
                     commit('setUser', user);
+                    if (response.data.tripId) {
+                        commit('setTripId', response.data.tripId);
+                    }
                 }
                 if (response.success && response.data.tripId) {
                     commit('setTripId', response.data.tripId);

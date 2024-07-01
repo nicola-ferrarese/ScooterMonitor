@@ -5,6 +5,22 @@ const  User  = require('../models/userModel');
 const  auth  = require('../middleware/auth');
 const { v4: uuidv4 } = require('uuid');
 const  TripView  = require('../models/tripViewModel');
+
+
+const getScooterFromTrip = async (data) => {
+    const { tripId, token } = data;
+    try {
+        const db = getDb();
+
+        const scooter = await db.collection('trip_segments').findOne({ tripId: tripId });
+        return scooter;
+    } catch (error) {
+        console.error(`[Trip Manager] Failed to get scooter from trip: ${error}`);
+        return null;
+    }
+
+}
+
 const evaluateStart = async (scooter_id, token) => {
     try {
         const db = getDb();
@@ -84,4 +100,4 @@ const getTripView = async (scooter_id) => {
             return({ success: false, message: error.message });
     }
 }
-module.exports = { evaluateStart ,evaluateStop, getTripView};
+module.exports = { evaluateStart ,evaluateStop, getTripView, getScooterFromTrip};

@@ -82,9 +82,10 @@ const auth = {
         }
         const tripId = user.currentRide;
         console.log(`[AUTH] Fetching data for trip ${tripId}`);
+
         const scooter_utilized = await Scooter.findOne({tripId: tripId});
         if (!scooter_utilized) {
-            return callback({success: true, message: 'No active ride', data});
+            return callback({success: true, message: 'No active ride', data: data});
         }
         data= {...data, scooterId: scooter_utilized.id, tripId: scooter_utilized.tripId};
         callback({success: true, message: 'Data retrieved', data: data});

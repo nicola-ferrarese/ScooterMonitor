@@ -3,7 +3,7 @@ const auth = require('./auth');
 const Scooter = require('../models/scooterModel'); // Ensure you have the correct path
 const {updateFrontEndScooters, fetchScooterDataDB, updateFrontEndScooterPosition} = require('./scooterService');
 let io = null;
-const {evaluateStart, evaluateStop, getTripView} = require('./TripManager');
+const {evaluateStart, evaluateStop, getTripView, getScooterFromTrip} = require('./TripManager');
 module.exports = {
     initSocket: (server) => {
         io = socketIO(server, {
@@ -32,7 +32,10 @@ module.exports = {
             });
             socket.on('startRide', async (data, callback) => {
                 const { scooter_id, token } = data;
-                const result = await evaluateStart(scooter_id , token);
+                let result = await evaluateStart(scooter_id , token);
+                if (result.success) {
+                    result = {...result, scooterId: scooter_id};
+                }
                 callback(result);
             });
             socket.on('stopRide', async (data, callback) => {
@@ -42,6 +45,10 @@ module.exports = {
             });
             socket.on('getTripViews', async (scooter_id, callback) => {
                 const result = await getTripView(scooter_id);
+                callback(result);
+            });
+            socket.on('getScooterId', async (data, callback) => {
+                const result = await getScooterFromTrip(data);
                 callback(result);
             });
         });
