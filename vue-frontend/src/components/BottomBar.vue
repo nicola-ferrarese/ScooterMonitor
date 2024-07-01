@@ -14,8 +14,11 @@
           <button v-if="userLogged && isRiding && belongsToUser" class="toggle-button" @click="stopRide">Stop Ride</button>
         </div>
       </div>
-        {{userLogged}}
+       <!-- {{userLogged}}
         {{store.getters.isAuthenticated}}
+        {{belongsToUser}}
+        {{isRiding}}
+        {{localScooterData.inUse}} -->
         <button v-if="userLogged && !isRiding && !localScooterData.inUse"  class="toggle-button" @click="unlockScooter">Unlock Scooter</button>
 
 
@@ -217,6 +220,7 @@ export default {
 
           //this.store.dispatch('fetchUserScooter', localStorage.getItem('token'));
           this.store.commit('setScooterId', this.localScooterData.id);
+          this.store.commit('setRiding', true);
         }
       });
     }

@@ -42,6 +42,9 @@ const store = createStore({
             state.isRiding = false;
             state.scooterId = null;
         },
+        setRiding(state, value) {
+            state.isRiding = value;
+        },
         setTripId(state, tripId) {
             state.tripId = tripId;
             state.isRiding = !!tripId;
