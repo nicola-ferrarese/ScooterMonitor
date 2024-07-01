@@ -149,6 +149,7 @@ export default {
       marker.getMarker().on('click', () => {
         const markerState = scooterMap.get(id);
         if (markerState) {
+          scooterMap.forEach(markerState => markerState.marker.getMarker().activeFollowMarker(false));
           scooterMap.forEach(markerState => markerState.clicked = false);
           markerState.clicked = !markerState.clicked;
           this.setProperIcons();
