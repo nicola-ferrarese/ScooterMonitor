@@ -19,7 +19,7 @@ import { redIcon, greenIcon, violetIcon, orangeIcon } from '../assets/icons.js';
 import { mapActions, mapGetters, mapState } from 'vuex';
 import {useStore} from "vuex";
 import {useRouter} from "vue-router";
-
+import { MAP_TOKEN } from '@/assets/secrets';
 const scooterMap = new Map();
 const socket = io('http://localhost:3000');
 
@@ -49,6 +49,7 @@ export default {
   },
   data() {
     return {
+      router: useRouter(),
       map: null,
       showBottomBar: false,
       selectedScooter: {},
@@ -56,14 +57,32 @@ export default {
     };
   },
   computed: {
-    ...mapState(['token', 'socket', 'scooterId']),
+    ...mapState(['token', 'socket', 'scooterId', "darkMode"]),
     ...mapGetters(['tripId', 'isRiding', 'token', "isAuthenticated"]),
     ...mapActions([ 'updateTripId'])
   },
   watch: {
     showBottomBar(newValue) {
       if (newValue) {
-        this.bottomBarKey++; // Increment the key to force a reload of the BottomBar component
+        this.bottomBarKey++;
+      }
+    },
+    darkMode(newVal, oldVal) {
+      if (newVal !== oldVal) {
+        this.initMap();
+        scooterMap.forEach(markerState => {
+          markerState.marker.getMarker().addTo(this.map);
+        });
+        this.addListeners();
+        this.setUserScooter();
+      }
+    },
+    token(newVal, oldVal) {
+      if (newVal !== oldVal) {
+        console.log('token changed');
+        if (newVal) {
+          this.store.dispatch('fetchUserScooter', newVal);
+        }
       }
     },
   },
@@ -76,9 +95,18 @@ export default {
   },
   methods: {
     initMap() {
-      this.map = L.map('map').setView([44.14, 12.23], 13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
+      if (this.map) {
+        this.map.remove();
+      }
+      // Define the map provider based on the darkMode flag
+      const mapProvider = this.darkMode
+          ? "https://tile.jawg.io/jawg-dark/{z}/{x}/{y}{r}.png?access-token=" + MAP_TOKEN
+          : "https://tile.jawg.io/jawg-streets/{z}/{x}/{y}{r}.png?access-token=" + MAP_TOKEN;
+
+      this.map = L.map('map').setView([44.140026, 12.242754], 15);
+
+      L.tileLayer(mapProvider, {
+        attribution: '<a href="https://www.jawg.io?utm_medium=map&utm_source=attribution" target="_blank">&copy; Jawg</a> - <a href="https://www.openstreetmap.org?utm_medium=map-attribution&utm_source=jawg" target="_blank">&copy; OpenStreetMap</a>&nbsp;contributors'
       }).addTo(this.map);
     },
     initSocket() {
@@ -88,23 +116,27 @@ export default {
       socket.emit('requestAllScooters');
     },
     addListeners() {
-      const router = useRouter();
+
       this.map.on('dragstart', () => {
         scooterMap.forEach(instance => instance.clicked = false);
         scooterMap.forEach(instance => instance.marker.getMarker().activeFollowMarker(false));
-        this.showBottomBar = false;
         this.setProperIcons();
-        router.push('/');
+        this.showBottomBar = false;
+        this.router.push('/');
         this.mapClicked();
       });
       this.map.on('click', () => {
+        scooterMap.forEach(instance => instance.clicked = false);
+        scooterMap.forEach(instance => instance.marker.getMarker().activeFollowMarker(false));
         this.setProperIcons();
-        router.push('/');
+        this.router.push('/');
         this.mapClicked();
       });
       this.map.on('change', () => {
+        scooterMap.forEach(instance => instance.clicked = false);
+        scooterMap.forEach(instance => instance.marker.getMarker().activeFollowMarker(false));
         this.setProperIcons();
-        router.push('/');
+        this.router.push('/');
         this.mapClicked();
       });
     },
@@ -142,6 +174,7 @@ export default {
       return scooterMap.get(id);
     },
     updateScooterPosition(data) {
+      console.log('updateScooterPosition');
       if(this.isAuthenticated){
         this.setUserScooter();
       }
@@ -158,19 +191,21 @@ export default {
         markerState.inUse = data.inUse;
       }
       this.setProperIcons();
+      // add marker to map
+
     },
     updateScooterTrip(data) {
       if (!data.id || !data.event) {
         return;
       }
-
+      console.log('[dasasdasd] '+ JSON.stringify(data));
       let markerState = scooterMap.get(data.id);
       if (!markerState) {
         markerState = this.createMarker(data.id, data.start.lat, data.start.lon);
       }
 
       // Update the tripId in the store
-      if(this.store.getters.tripId !== data.tripId){
+      if(this.store.getters.tripId === data.tripId  ){
         this.store.dispatch('updateTripId', data.tripId);
       }
 
@@ -212,7 +247,7 @@ export default {
       //use vuex store getter
       console.log('[frontend] setting user scooter')
 
-      this.store.dispatch('fetchUserScooter', this.token);
+      //this.store.dispatch('fetchUserScooter', this.token);
 
       console.log("authenticated: " + this.isAuthenticated);
       if (!this.isAuthenticated) {
@@ -221,7 +256,7 @@ export default {
         });
         return;
       }
-      if (!this.scooterId) {
+      if (!this.store.getters.scooterId) {
           console.log('scooterId is null');
           this.store.dispatch('updateTripId', null);
           scooterMap.forEach(markerState => {

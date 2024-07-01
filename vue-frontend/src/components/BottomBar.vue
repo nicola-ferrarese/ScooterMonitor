@@ -118,8 +118,9 @@ export default {
       return isRiding;
     },
     belongsToUser() {
-      console.log(this.store.getters.scooterId)
-      console.log(this.localScooterData.id)
+
+      console.log("store " + this.store.getters.scooterId)
+      console.log("clicked " + this.localScooterData.id)
       if (!this.store.getters.scooterId) {
         return false;
       }
@@ -213,7 +214,9 @@ export default {
 
         } else {
           console.log("Ride started successfully.", response);
-          this.store.dispatch('fetchUserScooter', localStorage.getItem('token'));
+
+          //this.store.dispatch('fetchUserScooter', localStorage.getItem('token'));
+          this.store.commit('setScooterId', this.localScooterData.id);
         }
       });
     }
@@ -230,6 +233,8 @@ export default {
           console.log("Ride stopped successfully.", response);
           // Update local state as needed
           this.localScooterData.inUse = false;
+          this.store.commit('setScooterId', null);
+
         }
       });
     }
