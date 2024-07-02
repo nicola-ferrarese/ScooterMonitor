@@ -19,6 +19,7 @@ import { mapActions, mapGetters, mapState } from 'vuex';
 import {useStore} from "vuex";
 import {useRouter} from "vue-router";
 import { MAP_TOKEN } from '@/assets/secrets';
+import {computed, watch} from "vue";
 const scooterMap = new Map();
 
 const socket_endpoint = process.env.VUE_APP_SOCKET_ENDPOINT ;
@@ -42,6 +43,13 @@ export default {
     const mapClicked = () => {
       store.commit('setMapClicked', true);
 
+    const isDarkMode = computed(() => store.getters.darkMode); // make isDarkMode a computed property
+    // watch isDarkMode for changes
+    watch(isDarkMode, () => {
+
+      console.log('Dark mode changed to:');
+
+    });
     };
     return {
       store,
@@ -246,7 +254,6 @@ export default {
       });
     },
     setUserScooter() {
-      //use vuex store getter
       console.log('[frontend] setting user scooter')
 
       //this.store.dispatch('fetchUserScooter', this.token);
@@ -258,7 +265,7 @@ export default {
         });
         return;
       }
-      if (!this.store.getters.scooterId) {
+      if (!this.store.getters.scooterId || !this.store.getters.isRiding) {
           console.log('scooterId is null');
           this.store.dispatch('updateTripId', null);
           scooterMap.forEach(markerState => {
