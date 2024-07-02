@@ -12,3 +12,19 @@
     padding: 10px;
   }
 }
+
+@mixin text-medium {
+  font-family: 'EuclidMedium';
+}
+@mixin text-bold {
+  font-family: 'EuclidBold';
+}
+@mixin text-regular {
+  font-family: 'EuclidRegular';
+}
+@mixin text-semi-bold {
+  font-family: 'EuclidSemiBold';
+}
+@mixin text-light {
+  font-family: 'EuclidLight';
+}

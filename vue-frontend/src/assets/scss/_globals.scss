@@ -1,13 +1,28 @@
 @import 'variables';
 @import 'mixins';
 @import 'components';
+@import "text";
 body {
+  margin: 0;
+  font-family: 'EuclidMedium';
   background-color: $primary-color;
   color: $secondary-color;
-  margin: 0;
-  font-family: Arial, sans-serif;
 }
 
 .centered {
   @include center-content;
+}
+
+body {
+
+}
+
+.popup {
+  background-color: $primary-color;
+  color: $secondary-color;
+}
+
+.toggle-button {
+  background-color: $primary-color;
+  color:$secondary-color;
 }

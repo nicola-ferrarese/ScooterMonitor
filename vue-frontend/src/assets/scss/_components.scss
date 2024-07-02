@@ -4,7 +4,7 @@
 .logo {
   font-size: 1.5em;
   background-color: $dark-primary-color;
-  color: $dark-secondary-color;
+  //color: $dark-secondary-color;
   padding: 10px 10px;
   transition: width 0.3s ease, height 0.3s ease, background-color 0.3s, color 0.3s;
 }
@@ -18,10 +18,20 @@
   color: $light-secondary-color;
 }
 
-.header {
-  padding: 10px 0;
-  transition: background-color 0.3s, color 0.3s;
+.light-mode.trip-item {
+  background-color: $light-primary-color;
+  color: #333;
+}
 
+.dark-mode.trip-item {
+  background-color: $dark-primary-color;
+  color: $dark-secondary-color;
+}
+
+.header {
+  padding: 10px 5px;
+  transition: background-color 0.3s, color 0.3s;
+  ;
 }
 
 .dark-mode.header {
@@ -42,6 +52,7 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  font-size: small;
 }
 
 .box {
@@ -60,7 +71,10 @@
 }
 
 .toggle-button{
-    margin-left: 10px;
+    font-family: EuclidLight;
+    height: 40px;
+    margin-left: 5px;
+    margin-right: 10px;
     margin-bottom: 2px;
     padding: 10px 20px;
     border: none;
@@ -117,18 +131,21 @@
 
 .popup {
   position: fixed; /* Position the login form relative to the viewport */
-  top: 70%; /* Center the form vertically */
-  left: 50%; /* Center the form horizontally */
+  //top: 70%; /* Center the form vertically */
+  //left: 50%; /* Center the form horizontally */
   //transform: translate(-20%, 50%); /* Adjust the position so the center of the form is at the center of the viewport */
   z-index: 9999; /* Make sure the form appears above all other elements */
   border-radius: 10px; /* Adjust as needed */
   padding: 20px; /* Add some padding */
   box-shadow: 0 0 0px rgba(0, 0, 0, 0.1); /* Add a subtle shadow */
   transition: width 0.3s ease, height 0.3s ease, background-color 0.3s, color 0.3s;
-  width: 30%;
+  //width: 30%;
 }
 #detailView{
-  top : 0;
-  width: 50%;
+  padding: 4px;
+  top : 15vh;
+  left: 25vh;
+  transform: translate(0%, 0%);
+  align-self: center;
 }
 
