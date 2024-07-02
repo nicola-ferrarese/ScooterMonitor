@@ -1,7 +1,8 @@
 <template>
-  <header @map-click="handleMapClick"  class="header" :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }">
-    hello {{username}}
-    <div class="container" :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }">
+  <header @map-click="handleMapClick" style="display: flex; justify-content: flex-end; align-content: center" class="header stats" id="stats" :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }">
+
+    <div v-if = "isAuthenticated" class="username">Welcome, {{username}}</div>
+    <div class="header stats" :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }">
         <button v-if="!isAuthenticated" class="toggle-button" @click="navigateToLogin">Log In</button>
         <button v-if="!isAuthenticated" class="toggle-button" @click="navigateToSignUp">Sign Up</button>
         <button v-if="isAuthenticated" class="toggle-button" @click="logout">Log Out</button>
@@ -105,20 +106,12 @@ export default {
 <style scoped>
 
 
-.container {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
+.username {
+  margin-top: auto;
+  margin-bottom: auto;
 }
 
 @media (max-width: 768px) {
-  .container {
-    flex-direction: column;
-    align-items: flex-start;
-  }
   nav {
     width: 100%;
     display: flex;

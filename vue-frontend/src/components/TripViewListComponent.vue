@@ -1,35 +1,44 @@
 <template>
-
-    <div v-if="visible" class="popup" id="popup" :class="{ 'popup-general': general, 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }">
+  <div v-if="visible" class="popup popup-general" id="popup" :class="{ 'popup-general': general, 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }">
     <div class="popup-content">
       <h2>Trip Views</h2>
       <div class="controls">
-        <label for="sort">Sort by:</label>
-        <select v-model="sortOption" @change="sortTrips">
+          <h3 @click="sortTrips">
+            <label for="sort" class="sort">Sort by:</label>
+          </h3>
+        <select v-model="sortOption" class="toggle-button" @change="sortTrips">
           <option value="totalDistance">Total Distance</option>
           <option value="date">Date</option>
           <option value="duration">Duration</option>
         </select>
-        <button  :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }" class="toggle-button" @click="toggleOrder">{{ sortOrder === 'asc' ? 'Ascending' : 'Descending' }}</button>
+        <button :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }" class="toggle-button" @click="toggleOrder">{{ sortOrder === 'asc' ? 'Ascending' : 'Descending' }}</button>
       </div>
       <div class="trip-list">
-        <div v-for="trip in sortedTrips" :key="trip.tripId" class="trip-item">
-          <p>Scooter ID: {{ trip.scooterId }}</p>
-          <p>Total Distance: {{ Math.round(trip.totalDistance)/1009  }} Km</p>
-          <p>Cost: {{  Math.round(trip.totalCost) }} Eur</p>
-          <p>Duration: {{ (trip.duration / 1000 / 60).toFixed(0) }} minutes</p>
-          <p>
-            Date: {{ new Date(trip.end).toLocaleDateString() }}
-          </p>
-          <p>Start Time: {{ new Date(trip.start).toLocaleTimeString() }}
-            End Time: {{ new Date(trip.end).toLocaleTimeString() }}</p>
-        </div>
+        <div v-for="trip in sortedTrips" :key="trip.tripId" class="trip-item" :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }">
+            <div class="left-column">
+              <div class="item-id">
+                Scooter: {{ trip.scooterId }}
+              </div>
+              <div class="item-image">
+                <img :src="getImage()" alt="Scooter Image" class="scooter-image">
+              </div>
+            </div>
+            <div class="right-column">
+              <div class="item-details">
+                Cost: {{ Math.round(trip.totalCost) }} Eur <br>
+                Duration: {{ (trip.duration / 1000 / 60).toFixed(0) }} minutes<br>
+                Total Distance: {{ (Math.round(trip.totalDistance)/1009).toFixed(2)  }} Km<br>
+                Date: {{ new Date(trip.end).toLocaleDateString() }}<br>
+                Start Time: {{ new Date(trip.start).toLocaleTimeString() }}<br>
+                End Time: {{ new Date(trip.end).toLocaleTimeString() }}<br>
+              </div>
+            </div>
+          </div>
       </div>
       <button @click="closePopup" :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }" class="toggle-button">Close</button>
     </div>
   </div>
 </template>
-
 <script>
 import { ref, computed, watch } from 'vue';
 import { io } from 'socket.io-client';
@@ -42,6 +51,11 @@ export default {
     showPopup: Boolean,
     scooterId: String,
     general: Boolean
+  },
+  methods: {
+    getImage(){
+      return require('@/assets/img/lime.webp');
+    }
   },
   setup(props, { emit }) {
     const socket = io('http://localhost:3000');
@@ -130,9 +144,13 @@ export default {
   align-items: center;
 
 }
-
+.toggle-button{
+  margin-top: 10px;
+  width: 20vh;
+  align-self: flex-end;
+}
 .popup-content {
-  padding: 20px;
+  padding: 10px;
   border-radius: 8px;
   width: 66.66vw; /* 2/3 of the viewport width */
   height: 66.66vh; /* 2/3 of the viewport height */
@@ -140,25 +158,110 @@ export default {
   display: flex;
   flex-direction: column;
 }
-
+.sort {
+  margin-right: 10px;
+  margin-top: auto;
+  margin-bottom: auto;
+  font-family: EuclidMedium;
+  font-size: 16px;
+}
 .controls {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 20px;
+  align-content: center;
+  justify-content: flex-end;
+  margin-bottom: 5px;
 }
 
 .trip-list {
   flex-grow: 1; /* Make the list take up remaining space */
   overflow-y: auto;
+  border-radius: 8px
 }
+
+
 
 .trip-item {
-  border: 1px solid #ccc;
   padding: 10px;
-  margin-bottom: 10px;
+  height: fit-content;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
 }
 
-button {
+.two-column-layout {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  /* Customize the height and width of the flexbox table */
+  height: 100px;
+}
+
+.adjustable-text {
+  max-height: 50px;
+  font-size: clamp(0.5rem, 1vw, 1rem); /* Adjust the font size based on the viewport width */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+h1 {
+  font-size: 5.9vw;
+}
+h2 {
+  font-size: 3.0vh;
+}
+h3 {
+  font-size: 2.5vh;
+}
+p {
+  font-size: 2vmin;
+
+}
+.left-column, .right-column {
+  font-size: small;
+  font-weight: bold;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.left-column {
+}
+.right-column {
+  flex: 1;
+}
+.item-id {
+  background-color: #ffa500; /* adjusted color */
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.item-image {
+  height: 10vh;
+  background-color: #32cd32; /* adjusted color */
+  padding: 10px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   margin-top: 10px;
+}
+
+.item-details {
+  flex:1;
+  background-color: #1e90ff; /* adjusted color */
+  padding: 10px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  height: fit-content;
+}
+
+.scooter-image {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 8px;
 }
 </style>

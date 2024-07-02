@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <header  :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }" class="logo" >Scooter Monitoring
+    <header  :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }" class="header title" >Scooter Monitoring
         <button class=" toggle-button" @click="toggleTheme">{{ buttonText }}</button>
 
     </header>
@@ -68,5 +68,10 @@ export default {
   flex-direction: column;
 }
 
+.title{
+  font-family: 'EuclidSemiBold';
+  font-size: 4vh;
+  margin-left: 20px
+}
 
 </style>

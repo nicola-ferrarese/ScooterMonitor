@@ -1,11 +1,12 @@
 <template>
   <div  v-if="visible">
     <div v-if="loading" class="loading" >Loading...</div>
-    <div v-else :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }" class="popup">
+    <div v-else :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }" class="popup scooterDetail">
       <p>ID: {{ localScooterData.id }}</p>
       <div v-if="localScooterData.inUse && belongsToUser">
-        <p>Trip Distance: {{ tripData.totalDistance }}</p>
-        <p>Trip Cost: {{ tripData.totalCost }}</p>
+        <p>Duration: {{ (tripData.duration / 1000 / 60).toFixed(0) }} minutes<br></p>
+        <p>Total Distance: {{ (Math.round(tripData.totalDistance)/1009).toFixed(2)  }} Km<br></p>
+
         <p>Trip Duration: {{ tripData.duration }} minutes </p>
         <div v-if="showLoginPrompt">
           Please log in to unlock a scooter.
@@ -247,7 +248,14 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import '@/assets/scss/components';
+@import '@/assets/scss/globals';
+
+.scooterDetail {
+  bottom: 10px;
+  right: 10px;
+  width: 50%;
+
+}
 
 
 /*
