@@ -1,6 +1,6 @@
 version: '2'
 services:
-  mongodb:
+  mongo:
     image: mongo:latest
     environment:
       MONGO_INITDB_ROOT_USERNAME: rootuser
@@ -9,7 +9,8 @@ services:
       - mongodb_data:/data/db
     ports:
       - "27017:27017"
-
+    networks:
+      - app_network
 
   kafka:
     image: wurstmeister/kafka
@@ -21,13 +22,15 @@ services:
       - KAFKA_ADVERTISED_PORT=9092
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
       - KAFKA_LISTENERS=PLAINTEXT://:29092,EXTERNAL://:9092
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:29092,EXTERNAL://localhost:9092
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:29092,EXTERNAL://kafka:9092
       - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
       - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
       - KAFKA_SCHEMA_REGISTRY_URL=schemaregistry:8081
-
     depends_on:
       - zookeeper
+    restart: always
+    networks:
+      - app_network
 
   zookeeper:
     image: wurstmeister/zookeeper
@@ -36,7 +39,9 @@ services:
       - "2181:2181"
     environment:
       - KAFKA_ADVERTISED_HOST_NAME=zookeeper
-   
+    networks:
+      - app_network
+
   schemaregistry:
     container_name: schema_registry
     image: confluentinc/cp-schema-registry:6.2.0
@@ -49,7 +54,9 @@ services:
       SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8081"
     ports:
       - 8081:8081
-    
+    networks:
+      - app_network
+
   kafka-ui:
     container_name: kafka-ui
     image: provectuslabs/kafka-ui:latest
@@ -67,7 +74,48 @@ services:
       KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schemaregistry:8081
       KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: first
       KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://kaf_connect:8083
+    networks:
+      - app_network
+
+  node:
+    build:
+      context: ./node
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./node:/app
+    networks:
+      - app_network
+    depends_on:
+      - mongo
+
+  vue-frontend:
+    build:
+      context: ./vue-frontend
+      dockerfile: Dockerfile
+    volumes:
+      - ./vue-frontend:/app
+    ports:
+      - "8080:8080"
+    networks:
+      - app_network
+
+  scooter-sim:
+    build:
+      context: ./Scooter_Sim
+      dockerfile: Dockerfile
+    command: ["python", "scooter.py"]
+    volumes:
+      - ./Scooter_Sim:/app
+    depends_on:
+      - kafka
+    networks:
+      - app_network
 
 volumes:
   mongodb_data:
 
+networks:
+  app_network:
+    driver: bridge

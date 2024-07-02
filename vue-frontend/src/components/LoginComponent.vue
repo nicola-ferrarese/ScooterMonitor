@@ -28,12 +28,13 @@ export default {
     const username = ref('');
     const password = ref('');
     const message = ref('');
+    const socketEndpoint = process.env.VUE_APP_SOCKET_ENDPOINT;
     const router = useRouter();
     let store = useStore(); // Access the Vuex store
     // TODO: Implement the login as popup an same applies for sign in
     // TODO: add expiration time for the tokenR
     const login = () => {
-      const socket = io('http://localhost:3000');
+      const socket = io(socketEndpoint);
       socket.emit('login', { username: username.value, password: password.value }, (response) => {
         if (response.success) {
           localStorage.setItem('token', response.token);

@@ -58,7 +58,8 @@ export default {
     }
   },
   setup(props, { emit }) {
-    const socket = io('http://localhost:3000');
+    const socket_endpoint = process.env.VUE_APP_SOCKET_ENDPOINT
+    const socket = io(socket_endpoint);
     const trips = ref([]);
     const sortOption = ref('date');
     const sortOrder = ref('desc');

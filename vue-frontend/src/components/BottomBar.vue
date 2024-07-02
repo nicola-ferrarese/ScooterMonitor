@@ -23,7 +23,7 @@
         <button v-if="userLogged && !isRiding && !localScooterData.inUse"  class="toggle-button" @click="unlockScooter">Unlock Scooter</button>
 
 
-      <button  class="toggle-button"  @click="showTripViewList(localScooterData.id)">Show Trip Views</button>
+      <button  class="toggle-button"  @click="showTripViewList(localScooterData.id)">Show trip info</button>
       <TripViewList id="detailView"  class="resp"  v-if="showPopup" :visible="showPopup" :scooterId="localScooterData.id" @close="showPopup = false" />
     </div>
   </div>
@@ -41,6 +41,7 @@
 
 <script>
 import io from 'socket.io-client';
+
 import {ref, computed, watch} from 'vue';
 import TripViewList from './TripViewListComponent.vue';
 import { useStore } from "vuex";
@@ -78,8 +79,9 @@ export default {
     };
   },
   data() {
+    const socket_endpoint = process.env.VUE_APP_SOCKET_ENDPOINT;
     return {
-      socket:  io('http://localhost:3000'),
+      socket:  io(socket_endpoint),
       localScooterData: {},
       tripData: {
         totalDistance: '',

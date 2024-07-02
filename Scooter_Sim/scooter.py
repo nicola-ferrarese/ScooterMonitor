@@ -44,7 +44,7 @@ class Route:
 
 
 def run_consumer(scooter, loop, topic_commands):
-    kafka_config = {'bootstrap.servers': 'localhost:9092', 'group.id': f"scooters_consumers{random.randint(1, 1000)}", }
+    kafka_config = {'bootstrap.servers': 'kafka:9092', 'group.id': f"scooters_consumers{random.randint(1, 1000)}", }
 
     consumer = Consumer(kafka_config)
     consumer.subscribe([topic_commands])
@@ -59,11 +59,15 @@ def run_consumer(scooter, loop, topic_commands):
                 continue
             if msg.error():
                 print(f"Consumer error: {msg.error()}")
-                if msg.error().code() == KafkaException._PARTITION_EOF:
-                    # End of partition event
-                    continue
-                else:
-                    raise KafkaException(msg.error())
+                try:
+                    if msg.error().code() == KafkaException._PARTITION_EOF:
+                        # End of partition event
+                        continue
+                    else:
+                        raise KafkaException(msg.error())
+                except KafkaException as e:
+                    print(f"KafkaException: {e}")
+                    pass
             if stop_event.is_set() is True:
                 print("Stop event is set.")
                 break
@@ -362,7 +366,7 @@ def json_serializer(data):
 async def main(stop_event, graph_file_path="cesena.graphml"):
     print("Enter Main.")
     loop = asyncio.get_event_loop()
-    producer = Producer({'bootstrap.servers': 'localhost:9092'})
+    producer = Producer({'bootstrap.servers': 'kafka:9092'})
     # Command queue for communicating with scooter instances
     command_queue = Queue()
     graph = await load_graph(graph_file_path)

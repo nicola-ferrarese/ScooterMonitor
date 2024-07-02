@@ -17,3 +17,4 @@ app.config.globalProperties.$scss = {
 
 
 app.mount('#app')
+

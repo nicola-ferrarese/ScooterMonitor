@@ -33,10 +33,10 @@ export default {
     const showForm = ref(true);
     const store = useStore();
     const router = useRouter();
-
+    const socket_endpoint = process.env.VUE_APP_SOCKET_ENDPOINT
     const signUp = () => {
       console.log('signUp');
-      const socket = io('http://localhost:3000');
+      const socket = io(socket_endpoint);
       console.log('username:', username.value);
       socket.emit('signUp', { username: username.value, password: password.value }, (response) => {
         message.value = response.message;

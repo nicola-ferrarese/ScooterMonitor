@@ -20,7 +20,9 @@ import {useStore} from "vuex";
 import {useRouter} from "vue-router";
 import { MAP_TOKEN } from '@/assets/secrets';
 const scooterMap = new Map();
-const socket = io('http://localhost:3000');
+
+const socket_endpoint = process.env.VUE_APP_SOCKET_ENDPOINT ;
+const socket = io(socket_endpoint);
 
 export default {
   name: 'MapComponent',

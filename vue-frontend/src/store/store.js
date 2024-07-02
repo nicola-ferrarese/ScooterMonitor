@@ -1,7 +1,8 @@
 import { createStore } from 'vuex';
 import io from 'socket.io-client';
+const socketEndpoint = process.env.VUE_APP_SOCKET_ENDPOINT;
 
-let socket = io('http://localhost:3000');
+let socket = io(socketEndpoint);
 const store = createStore({
     state: {
         username: null,
@@ -72,7 +73,8 @@ const store = createStore({
         fetchUserScooter({ commit }, token) {
             console.log('Fetching user data ' + token);
             if (!this.socket) {
-                this.socket = io('http://localhost:3000');
+
+                this.socket = io(socketEndpoint);
             }
             this.socket.emit('getData', token, (response) => {
                 console.log('Response data: ', response.data);
