@@ -1,5 +1,5 @@
-<template>
-  <div  v-if="visible">
+<template @map-click="handleMapClick" >
+  <div v-if="visible">
     <div v-if="loading" class="loading" >Loading...</div>
     <div v-else :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }" class="popup scooterDetail">
       <p>ID: {{ localScooterData.id }}</p>
@@ -51,13 +51,14 @@ export default {
     TripViewList
   },
   props: {
-    visible: Boolean,
+
     scooterData: Object
   },
   setup() {
     const showPopup = ref(false);
     const scooterId = ref(null);
     const store = useStore();
+    const visible = ref(true);
 
     const showTripViewList  = (id) => {
         scooterId.value = id;
@@ -69,6 +70,7 @@ export default {
     });
     return {
       store,
+      visible,
       isDarkMode,
       showPopup,
       showTripViewList,
@@ -156,6 +158,9 @@ export default {
     });
   },
   methods: {
+    handleMapClick() {
+      this.visible = false;
+    },
     updateUserLogged() {
 
       this.userLogged = !!localStorage.getItem('token');
@@ -251,6 +256,7 @@ export default {
 @import '@/assets/scss/globals';
 
 .scooterDetail {
+  border: #007bff 1px solid;
   bottom: 10px;
   right: 10px;
   width: 50%;

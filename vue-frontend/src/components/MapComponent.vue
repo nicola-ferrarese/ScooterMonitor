@@ -1,6 +1,5 @@
 <template>
   <div id="map" @click="mapClicked"> </div>
-  <button v-if="showBottomBar" class="back-button" @click="hideBottomBar">Back</button>
   <BottomBar
       v-if="showBottomBar"
       :visible="showBottomBar"
