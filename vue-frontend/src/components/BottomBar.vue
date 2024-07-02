@@ -24,7 +24,7 @@
 
 
       <button  class="toggle-button"  @click="showTripViewList(localScooterData.id)">Show Trip Views</button>
-      <TripViewList id="detailView"   v-if="showPopup" :visible="showPopup" :scooterId="localScooterData.id" @close="showPopup = false" />
+      <TripViewList id="detailView"  class="resp"  v-if="showPopup" :visible="showPopup" :scooterId="localScooterData.id" @close="showPopup = false" />
     </div>
   </div>
 
@@ -254,6 +254,37 @@ export default {
   bottom: 10px;
   right: 10px;
   width: 50%;
+
+}
+
+@media (max-width: 768px) {
+  #detailView {
+    transform: translate(-10%, -0%);
+    left: 16vw;
+  }
+  .scooterDetail {
+    bottom: 10px;
+    right: 10px;
+    width: 50%;
+
+  }
+    .resp {
+     right: 50vh;
+      width: 80vw;
+    }
+    .toggle-button{
+      max-width: 16vw;
+      margin: 2px;
+      padding: 0px;
+      width: 100vw;
+      right: -50vw
+    }
+
+    .toggle-button{
+      width: 20vw;
+    }
+
+
 
 }
 
