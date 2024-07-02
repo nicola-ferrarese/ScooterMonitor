@@ -1,7 +1,7 @@
 <template>
   <div id="app">
-    <header  :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }" class="header title" >Scooter Monitoring
-        <button class=" toggle-button" @click="toggleTheme">{{ buttonText }}</button>
+    <header  :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }" class="header title resp" >Scooter Monitoring
+        <button class=" toggle-button resp" @click="toggleTheme">{{ buttonText }}</button>
 
     </header>
     <HeaderCmp />
@@ -72,6 +72,33 @@ export default {
   font-family: 'EuclidSemiBold';
   font-size: 4vh;
   margin-left: 20px
+}
+
+@media (max-width: 600px) {
+  .resp {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .title.resp{
+    margin: 2px;
+    padding: 0px;
+    padding-top: 1vh;
+    padding-left: 1vh;
+
+  }
+  .toggle-button.resp{
+    max-width: 14vw;
+    margin: 2px;
+    padding: 0px;
+    width: 100vw;
+  }
+
+  .toggle-button{
+    width: 20vw;
+  }
+
+
 }
 
 </style>

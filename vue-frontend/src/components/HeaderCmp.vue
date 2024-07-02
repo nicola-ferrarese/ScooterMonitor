@@ -3,10 +3,10 @@
 
     <div v-if = "isAuthenticated" class="username">Welcome, {{username}}</div>
     <div class="header stats" :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }">
-        <button v-if="!isAuthenticated" class="toggle-button" @click="navigateToLogin">Log In</button>
-        <button v-if="!isAuthenticated" class="toggle-button" @click="navigateToSignUp">Sign Up</button>
-        <button v-if="isAuthenticated" class="toggle-button" @click="logout">Log Out</button>
-        <button v-if="isAuthenticated" class="toggle-button" @click="showTripViewList()">Stats</button>
+        <button v-if="!isAuthenticated" class="toggle-button stats" @click="navigateToLogin">Log In</button>
+        <button v-if="!isAuthenticated" class="toggle-button stats" @click="navigateToSignUp">Sign Up</button>
+        <button v-if="isAuthenticated" class="toggle-button stats" @click="logout">Log Out</button>
+        <button v-if="isAuthenticated" class="toggle-button stats" @click="showTripViewList()">Stats</button>
         <TripViewList v-if="showPopup" :visible="showPopup" :general="showPopup" @close="showPopup = false" />
 
     </div>
@@ -112,6 +112,10 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .stats{
+    margin: 2px;
+    padding: 1px;
+  }
   nav {
     width: 100%;
     display: flex;
