@@ -1,17 +1,17 @@
 # Scooter Ride Application
 
 ## Overview
-
+![](./img/arch.png)
 This application is a full-stack solution built using the MEVN (MongoDB, Express, Vue, Node.js) stack.
 It provides a seamless experience for users to register, book, and ride scooters while offering a comprehensive dashboard for insights into scooter trip statistics and user behaviors.
 
-
+## Features
 ![](./img/dark.png)
 ![](./img/light.png)
 ![](./img/mapifo.png)
 
 
-## Features
+
 
 - 🚀 **Scalable and Reliable**: The application is containerized using Docker, ensuring easy deployment and scaling.
 - 🌐 **Real-time Communication**: Socket.IO is used to provide real-time updates and notifications to users.
