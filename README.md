@@ -5,6 +5,13 @@
 This application is a full-stack solution built using the MEVN (MongoDB, Express, Vue, Node.js) stack.
 It provides a seamless experience for users to register, book, and ride scooters while offering a comprehensive dashboard for insights into scooter trip statistics and user behaviors.
 
+
+<div align="center">
+<img src="./img/dark.png" height="600"/>
+<img src="./img/light.png" height="600"/>
+<img src="./img/mapifo.png" height="600"/>
+</div>  
+
 ## Features
 
 - 🚀 **Scalable and Reliable**: The application is containerized using Docker, ensuring easy deployment and scaling.

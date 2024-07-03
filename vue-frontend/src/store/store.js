@@ -80,7 +80,7 @@ const store = createStore({
                 console.log('Response data: ', response.data);
                 console.log('Response message: ', response.message);
                 console.log('Response success: ', response.success);
-                console.log('isRiding: ', !!response.data.tripId);
+
                 if (response.success) {
                     let user = {
                         username: response.data.user,
@@ -88,16 +88,17 @@ const store = createStore({
                         tripId: response.data.tripId,
                         isRiding: !!response.data.tripId,
                     };
+                    console.log('User: ', user);
                     commit('setUser', user);
-                    if (response.data.tripId) {
-                        commit('setTripId', response.data.tripId);
-                    }
+                    commit('setTripId', response.data.tripId);
+
                 }
                 if (response.success && response.data.tripId) {
                     commit('setTripId', response.data.tripId);
                 }
                 else {
                     console.log('-->No active ride? ' +   response.message);
+                    commit('setTripId', null);
                 }
             });
         },

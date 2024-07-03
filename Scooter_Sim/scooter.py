@@ -58,6 +58,7 @@ def run_consumer(scooter, loop, topic_commands):
                     break
                 continue
             if msg.error():
+                pass
                 print(f"Consumer error: {msg.error()}")
                 try:
                     if msg.error().code() == KafkaException._PARTITION_EOF:
