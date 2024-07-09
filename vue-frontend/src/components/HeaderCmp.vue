@@ -38,7 +38,7 @@ export default {
   },
   setup() {
     const router = useRouter();
-    const isAuthenticated = ref(!!localStorage.getItem('token'));
+    const isAuthenticated = ref(!!sessionStorage.getItem('token'));
     const store = useStore();
     const navigateToLogin = () => {
       router.push('/login');
@@ -53,7 +53,7 @@ export default {
     };
 
     const logout = () => {
-      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
       isAuthenticated.value = false;
       store.dispatch('clearUserData')
     };
@@ -97,7 +97,7 @@ export default {
       }
     },
     '$route'() {
-      this.isAuthenticated = !!localStorage.getItem('token');
+      this.isAuthenticated = !!sessionStorage.getItem('token');
     },
   }
 };

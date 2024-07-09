@@ -4,10 +4,10 @@
     <div v-else :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }" class="popup scooterDetail">
       <p>ID: {{ localScooterData.id }}</p>
       <div v-if="localScooterData.inUse && belongsToUser">
-        <p>Duration: {{ (tripData.duration / 1000 / 60).toFixed(0) }} minutes<br></p>
-        <p>Total Distance: {{ (Math.round(tripData.totalDistance)/1009).toFixed(2)  }} Km<br></p>
 
+        <p>Total Distance: {{ (Math.round(tripData.totalDistance)/1009).toFixed(2)  }} Km<br></p>
         <p>Trip Duration: {{ tripData.duration }} minutes </p>
+        <p>Total Cost: {{ (tripData.totalCost / 140).toFixed(2) }} €<br></p>
         <div v-if="showLoginPrompt">
           Please log in to unlock a scooter.
         </div>
@@ -165,7 +165,7 @@ export default {
     },
     updateUserLogged() {
 
-      this.userLogged = !!localStorage.getItem('token');
+      this.userLogged = !!sessionStorage.getItem('token');
     },
     closeErrorMessage() {
       this.errorMessage = '';
@@ -195,7 +195,7 @@ export default {
         });
       }
     },
-    unlockScooter() {if (!localStorage.getItem('token')) {
+    unlockScooter() {if (!sessionStorage.getItem('token')) {
         this.showLoginPrompt = true;
       } else {
       console.log("Scooter unlocked.");
@@ -204,7 +204,7 @@ export default {
 
       this.socket.emit('startRide', {
         scooter_id: this.localScooterData.id,
-        token: localStorage.getItem('token')
+        token: sessionStorage.getItem('token')
       }, (response) => {
         if (response.error) {
           console.error("Error starting ride:", response.error);
@@ -217,7 +217,7 @@ export default {
           }
           else {
             console.error("Error starting ride:", response.error);
-            localStorage.removeItem('token');
+            sessionStorage.removeItem('token');
             this.errorMessage = 'Session expired. Please log in again.';
           }
           // display error message
@@ -226,7 +226,7 @@ export default {
         } else {
           console.log("Ride started successfully.", response);
 
-          //this.store.dispatch('fetchUserScooter', localStorage.getItem('token'));
+          //this.store.dispatch('fetchUserScooter', sessionStorage.getItem('token'));
           this.store.commit('setScooterId', this.localScooterData.id);
           this.store.commit('setRiding', true);
         }
@@ -237,7 +237,7 @@ export default {
       console.log("Ride stopped.");
       this.socket.emit('stopRide', {
         scooter_id: this.localScooterData.id,
-        token: localStorage.getItem('token')
+        token: sessionStorage.getItem('token')
       }, (response) => {
         if (response.error) {
           console.error("Error stopping ride:", response.error);

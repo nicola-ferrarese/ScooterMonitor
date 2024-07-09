@@ -6,9 +6,9 @@ let socket = io(socketEndpoint);
 const store = createStore({
     state: {
         username: null,
-        token: localStorage.getItem('token') || null,
+        token: sessionStorage.getItem('token') || null,
         mapClicked: false,
-        isAuthenticated: !!localStorage.getItem('token'),
+        isAuthenticated: !!sessionStorage.getItem('token'),
         tripId: null,
         isRiding: false,
         socket: socket,

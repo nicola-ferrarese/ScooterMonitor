@@ -37,7 +37,7 @@ export default {
       const socket = io(socketEndpoint);
       socket.emit('login', { username: username.value, password: password.value }, (response) => {
         if (response.success) {
-          localStorage.setItem('token', response.token);
+          sessionStorage.setItem('token', response.token);
           if (!store){
             console.log('store is null');
             store = useStore();
@@ -48,7 +48,7 @@ export default {
           router.push('/');
         } else {
           message.value = response.message;
-          localStorage.removeItem('token');
+          sessionStorage.removeItem('token');
           store.dispatch('clearUserData');
         }
       });

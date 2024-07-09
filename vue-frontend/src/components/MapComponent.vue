@@ -32,8 +32,8 @@ export default {
   },
   setup() {
     const store = useStore();
-    if (localStorage.getItem('token')) {
-      const token = localStorage.getItem('token');
+    if (sessionStorage.getItem('token')) {
+      const token = sessionStorage.getItem('token');
 
 
       console.log('[Setup] setting token, ' + token);
@@ -185,6 +185,7 @@ export default {
     },
     updateScooterPosition(data) {
       console.log('updateScooterPosition');
+      console.log('isAuthenticated: ' + this.isAuthenticated)
       if(this.isAuthenticated){
         this.setUserScooter();
       }
@@ -265,6 +266,8 @@ export default {
         });
         return;
       }
+      console.log('scooterId: ' + this.scooterId);
+      console.log('isRiding: ' + this.isRiding);
       if (!this.store.getters.scooterId || !this.store.getters.isRiding) {
           console.log('scooterId is null');
           this.store.dispatch('updateTripId', null);
