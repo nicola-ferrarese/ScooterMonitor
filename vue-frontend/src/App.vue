@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <header  :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }" class="header title resp" >Scooter Monitoring
+    <header  :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }" class="header title resp" >Home2Car
         <button class=" toggle-button resp" @click="toggleTheme">{{ buttonText }}</button>
 
     </header>
@@ -40,9 +40,12 @@ export default {
   computed: {
     buttonText() {
       return this.isDarkMode ? 'Light Mode' : 'Dark Mode';
-    }
+    },
+
+
   },
   methods: {
+
     toggleTheme() {
       this.isDarkMode = !this.isDarkMode;
       this.store.dispatch('darkMode', this.isDarkMode);

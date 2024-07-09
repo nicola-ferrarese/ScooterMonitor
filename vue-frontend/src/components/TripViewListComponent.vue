@@ -25,12 +25,14 @@
             </div>
             <div class="right-column">
               <div class="item-details">
-                Cost: {{ Math.round(trip.totalCost) }} Eur <br>
-                Duration: {{ (trip.duration / 1000 / 60).toFixed(0) }} minutes<br>
-                Total Distance: {{ (Math.round(trip.totalDistance)/1009).toFixed(2)  }} Km<br>
+                Recharged Energy: {{ ((trip.duration/60) * 11).toFixed(2)  }} kWh
+                Recharge Time: {{ (trip.duration/1000/60) }} minutes<br>
+                Recharge Cost: {{ 0.35*(((trip.duration/60) * 11).toFixed(2))  }} €<br>
+
+
                 Date: {{ new Date(trip.end).toLocaleDateString() }}<br>
-                Start Time: {{ new Date(trip.start).toLocaleTimeString() }}<br>
-                End Time: {{ new Date(trip.end).toLocaleTimeString() }}<br>
+
+
               </div>
             </div>
           </div>

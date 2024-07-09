@@ -1,18 +1,19 @@
-<template @map-click="handleMapClick" >
+<template @map-click="" >
   <div v-if="visible">
     <div v-if="loading" class="loading" >Loading...</div>
     <div v-else :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }" class="popup scooterDetail">
-      <p>ID: {{ localScooterData.id }}</p>
+      <p>CP: Via 4 novembre, 13</p>
+      <p>CP power: 11 KW<br></p>
       <div v-if="localScooterData.inUse && belongsToUser">
-        <p>Duration: {{ (tripData.duration / 1000 / 60).toFixed(0) }} minutes<br></p>
-        <p>Total Distance: {{ (Math.round(tripData.totalDistance)/1009).toFixed(2)  }} Km<br></p>
+        <p>Recharged Energy: {{ ((tripData.duration/60) * 11).toFixed(2)  }} kWh </p>
+        <p>Recharge Time: {{ (tripData.duration) }} minutes<br></p>
+        <p>Recharge Cost: {{ 0.35*(((tripData.duration/60) * 11).toFixed(2))  }} €<br></p>
 
-        <p>Trip Duration: {{ tripData.duration }} minutes </p>
         <div v-if="showLoginPrompt">
           Please log in to unlock a scooter.
         </div>
         <div v-else :class="{ 'dark-mode': isDarkMode, 'light-mode': !isDarkMode }">
-          <button v-if="userLogged && isRiding && belongsToUser" class="toggle-button" @click="stopRide">Stop Ride</button>
+          <button v-if="userLogged && isRiding && belongsToUser" class="toggle-button" @click="stopRide">Stop Charge</button>
         </div>
       </div>
        <!-- {{userLogged}}
@@ -20,10 +21,10 @@
         {{belongsToUser}}
         {{isRiding}}
         {{localScooterData.inUse}} -->
-        <button v-if="userLogged && !isRiding && !localScooterData.inUse"  class="toggle-button" @click="unlockScooter">Unlock Scooter</button>
+        <button v-if="userLogged && !isRiding && !localScooterData.inUse"  class="toggle-button" @click="unlockScooter">Start Re-charge</button>
 
 
-      <button  class="toggle-button"  @click="showTripViewList(localScooterData.id)">Show trip info</button>
+      <button  class="toggle-button"  @click="showTripViewList(localScooterData.id)">Charging info</button>
       <TripViewList id="detailView"  class="resp"  v-if="showPopup" :visible="showPopup" :scooterId="localScooterData.id" @close="showPopup = false" />
     </div>
   </div>
@@ -273,7 +274,7 @@ export default {
   .scooterDetail {
     bottom: 10px;
     right: 10px;
-    width: 50%;
+    width: 70%;
 
   }
     .resp {
@@ -281,7 +282,7 @@ export default {
       width: 80vw;
     }
     .toggle-button{
-      max-width: 16vw;
+      max-width: 30vw;
       margin: 2px;
       padding: 0px;
       width: 100vw;
